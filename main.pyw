@@ -1,3 +1,4 @@
+# Ты думал тут что-то будет?
 #        ▄▄   ▄▄
 #      ▀███   ██                             ▀██▄
 #        ██                                    ██
@@ -14,7 +15,7 @@ import rosu_pp_py as rosu
 from tkinter import filedialog, ttk
 from tkinter import *
 
-# Объявление переменных
+# Объявление переменных и работа с реестром
 program_version = "v0.7.5"
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
 registry_path_application = winreg.CreateKey(registry_path, "Application")
