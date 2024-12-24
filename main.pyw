@@ -10,13 +10,15 @@
 #                      ██
 #                   ▄████▄
 # Импорт библиотек
-import webbrowser, threading, datetime, tkinter, winreg, time, glob, osu, re, os
+import webbrowser, traceback, threading, datetime, tkinter, winreg, ctypes, string, time, glob, osu, re, os
 import rosu_pp_py as rosu
 from tkinter import filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v0.7.5"
+program_version = "v0.7.6"
+(user32 := ctypes.windll.user32).SetProcessDPIAware()
+ui_scale = user32.GetDpiForSystem()/96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
 registry_path_application = winreg.CreateKey(registry_path, "Application")
 registry_path_settings = winreg.CreateKey(registry_path, "Settings")
@@ -63,7 +65,7 @@ def get_score(client_id, client_secret, score_id):
 
 def get_last_score(client_id, client_secret, player_id, osu_mode):
     try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user_scores(user=player_id, mode=osu_mode, type=osu.UserScoreType.RECENT, include_fails=True, limit=1)[0]
+        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user_scores(user=player_id, mode=osu_mode, type=osu.UserScoreType.RECENT, include_fails=bool(include_fails.get()), limit=1)[0]
     except IndexError:
         return None
     except:
@@ -110,7 +112,7 @@ def open_additional_settings():
     (additional_window := Toplevel(root)).focus_force()
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
-    additional_window.geometry("300x200")
+    additional_window.geometry(f"{str(int(300*ui_scale))}x{str(int(200*ui_scale))}")
     additional_window.iconbitmap(resource_path("window_icon.ico"))
     additional_window.title("настройки osu!parser")
     additional_window.attributes("-topmost", True)
@@ -121,12 +123,15 @@ def open_additional_settings():
     (additional_right_frame := ttk.Frame(additional_frame)).pack(fill=BOTH, side=RIGHT, pady=5)
     (additional_last_score__settings_label := ttk.Label(additional_left_frame, text="Настройки парсинга")).pack(side=TOP, anchor=N, padx=5)
     (additional_ignore_classic := ttk.Checkbutton(additional_left_frame, text="Игнорировать Classic", variable=ignore_classic, command=ignore_classic_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
+    (additional_include_fails := ttk.Checkbutton(additional_left_frame, text="Включать фейлы", variable=include_fails, command=include_fails_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_recalculations := ttk.Checkbutton(additional_left_frame, text="Расчёт pp за FC и SS", variable=recalculations)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_program_settings_label := ttk.Label(additional_right_frame, text="Настройки программы")).pack(side=TOP, anchor=N, padx=5)
     (additional_topmost_switch := ttk.Checkbutton(additional_right_frame, text="Поверх других окон", variable=topmost, command=topmost_switched)).pack(side=TOP, anchor=NE, padx=5, pady=5)
     (additional_osu_path_label := ttk.Label(additional_settings, text=osu_path)).pack(side=TOP, anchor=SW, padx=10)
-    additional_osu_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {osu_path}"))
+    if osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
+        additional_osu_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {osu_path}"))
     (additional_osu_path_button := ttk.Button(additional_settings, text="Выбрать папку osu!", command=osu_path_select)).pack(side=LEFT, anchor=SW, padx=10, pady=10, fill=X, expand=True)
+    (additional_auto_get_osu_path_button := ttk.Button(additional_settings, text="Авто", command=lambda: threading.Thread(target=auto_get_osu_path, daemon=True).start(), width=5)).pack(side=LEFT, anchor=SW, pady=10, fill=X, expand=True)
     (additional_close_button := ttk.Button(additional_settings, text="Закрыть", command=additional_window.destroy, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
     # Отрисовка дополнительных настроек
     additional_settings.pack(expand=True, fill=BOTH)
@@ -136,6 +141,10 @@ def open_additional_settings():
 def ignore_classic_switched():
     global ignore_classic
     winreg.SetValueEx(registry_path_settings, "ignore_classic", 0, winreg.REG_SZ, str(ignore_classic.get()))
+
+def include_fails_switched():
+    global include_fails
+    winreg.SetValueEx(registry_path_settings, "include_fails", 0, winreg.REG_SZ, str(include_fails.get()))
 
 def recalculations_switched():
     global recalculations
@@ -152,7 +161,41 @@ def osu_path_select():
     if (selected_path := filedialog.askdirectory(parent=additional_window, title="Выбор директории osu!", initialdir=osu_path, mustexist=True) .replace("/", "\\")) != "":
         osu_path = selected_path
         winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
-    additional_osu_path_label["text"] = osu_path
+    additional_osu_path_label.config(text=osu_path)
+
+def auto_get_osu_path():
+    global osu_path, additional_window
+    drives = []
+    songs_directory = []
+    executable_directory = []
+    osu_path = "Поиск директории osu!..."
+    additional_osu_path_label.config(text=osu_path)
+    additional_osu_path_label.unbind("<Button-1>")
+    for i in string.ascii_uppercase:
+        if os.path.isdir(i + ":"):
+            drives.append(i)
+    for i in drives:
+        for j in glob.glob(f"{i}:\\**\\osu!\\Songs", recursive=True):
+            if "Application Data" not in j and "Local Settings" not in j:
+                songs_directory.append(re.sub("\\\\Songs$", "", j))
+        for j in glob.glob(f"{i}:\\**\\osu!\\osu!.exe", recursive=True):
+            if "Application Data" not in j and "Local Settings" not in j:
+                executable_directory.append(re.sub("\\\\osu!.exe$", "", j))
+    for j in songs_directory:
+        for k in executable_directory:
+            if songs_directory == executable_directory:
+                osu_path = j
+                winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
+                if bool(additional_window.winfo_exists()):
+                    additional_osu_path_label.config(text=osu_path)
+                    additional_osu_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {osu_path}"))
+                break
+            else:
+                osu_path = "Директория osu! не найдена!"
+                if bool(additional_window.winfo_exists()):
+                    winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
+                    additional_osu_path_label.config(text=osu_path)
+                additional_osu_path_label.unbind("<Button-1>")
 
 def close_settings():
     global main_menu, settings
@@ -199,17 +242,22 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                     last_score_progressbar.config(value=55)
                     beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
                     beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode)
-                if last_score_parsing_status and bool(recalculations.get()):
-                    recalculation = beatmap_path = ""
-                    lazer_score = "CL" not in (mods_list := [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))])
+                    recalculation = ""
+                    mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
+                if last_score_parsing_status and bool(recalculations.get()) and osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
+                    beatmap_path = ""
+                    lazer_score = "CL" not in mods_list
                     try:
                         beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
-                        if score.max_combo/beatmap_attributes.max_combo < 0.975 and score.rank.name not in ["S", "SILVER_S"]:
+                    except IndexError:
+                        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться непосредственно в GUI
+                    except:
+                        print(traceback.format_exc()) # Для отладки
+                    else:
+                        if score.max_combo/beatmap_attributes.max_combo < 0.975:
                             recalculation = f", FC: {round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
-                        elif score.rank.name not in ["SS", "SILVER_SS"]:
+                        else:
                             recalculation = f", SS: {round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
-                    except Exception as e:
-                        print(e)
                 if last_score_parsing_status:
                     last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
                     last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
@@ -221,21 +269,21 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                     last_score_mods_label.config(text=f"{mods_str if (mods_str := f"Моды: {", ".join(map(str, ((mods_list, mods_list.remove("CL") if "CL" in mods_list and bool(ignore_classic.get()) else None), mods_list if mods_list is not None else "")[1]))}") != "Моды: " else ""}".replace("None", "0"))
                     last_score_grades_label.config(text=f"Ранк: {score.rank.name.replace("SILVER_SS", "SS+").replace("SILVER_S", "S+")}, Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
                     if osu_mode == osu.GameModeStr.STANDARD.value:
-                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}".replace("None", "0"))
-                        last_score_scores_additional_label.config(text=f"{"PASSED" if score.passed else "FAILED"}")
+                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
                     elif osu_mode == osu.GameModeStr.TAIKO.value:
-                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, Miss: {score.statistics.miss}".replace("None", "0"))
-                        last_score_scores_additional_label.config(text=f"{"PASSED" if score.passed else "FAILED"}")
+                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
                     elif osu_mode == osu.GameModeStr.CATCH.value:
-                        last_score_scores_label.config(text=f"Fruits: {score.statistics.great}/{score.maximum_statistics.great}, Ticks: {score.statistics.large_tick_hit}/{score.maximum_statistics.large_tick_hit}, Droplets: {score.statistics.small_tick_hit}/{score.maximum_statistics.small_tick_hit}".replace("None", "0"))
-                        last_score_scores_additional_label.config(text=f"{"PASSED" if score.passed else "FAILED"}")
+                        last_score_scores_label.config(text=f"Fruits: {score.statistics.great}/{score.maximum_statistics.great}, Ticks: {score.statistics.large_tick_hit}/{score.maximum_statistics.large_tick_hit}, Droplets: {score.statistics.small_tick_hit}/{score.maximum_statistics.small_tick_hit}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
                     elif osu_mode == osu.GameModeStr.MANIA.value:
                         last_score_scores_label.config(text=f"Max: {score.statistics.perfect}/{score.maximum_statistics.perfect}, 300: {score.statistics.great}, 200: {score.statistics.good}".replace("None", "0"))
                         last_score_scores_additional_label.config(text=f"100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
             else:
                 last_score_progressbar.config(value=55)
                 player = get_profile(client_id, client_secret, player_id, osu_mode)
-                last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+                try:
+                    last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+                except:
+                    last_score_player_label.config(text=f"{player.username} (#???)")
                 last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
                 last_score_link_label.config(text="Последний рекорд отсутствует!")
             fastmode_current = fastmode.get()
@@ -311,6 +359,12 @@ try:
 except:
     ignore_classic.set(0)
 
+include_fails = IntVar()
+try:
+    include_fails.set(int(winreg.QueryValueEx(registry_path_settings, "include_fails")[0]))
+except:
+    include_fails.set(0)
+
 recalculations = IntVar()
 try:
     recalculations.set(int(winreg.QueryValueEx(registry_path_settings, "recalculations")[0]))
@@ -330,7 +384,7 @@ except:
     fastmode.set(0)
 # Настройки окна
 root.resizable(width=True, height=True)
-root.minsize(550, 300)
+root.minsize(int(550*ui_scale), int(300*ui_scale))
 root.iconbitmap(resource_path("window_icon.ico"))
 root.title("osu!parser")
 root.attributes("-topmost", bool(topmost.get()))
@@ -366,13 +420,13 @@ settings_credits_label.bind("<Button-1>", lambda i: webbrowser.open_new("https:/
 last_score = ttk.Frame(root)
 (last_score_title := ttk.Label(last_score, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
 (last_score_settings_border := ttk.LabelFrame(last_score)).pack(fill=BOTH, side=LEFT, anchor=CENTER)
-(last_score_player_id_frame := ttk.Frame(last_score_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=(10, 0), pady=3)
-(last_score_player_id_border := ttk.LabelFrame(last_score_player_id_frame, text="ID игрока:")).pack(side=LEFT, anchor=NW, pady=3)
+(last_score_player_id_frame := ttk.Frame(last_score_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=10, pady=3)
+(last_score_player_id_border := ttk.LabelFrame(last_score_player_id_frame, text="ID игрока:")).pack(side=TOP, anchor=CENTER, fill=X, pady=3)
 (last_score_player_id_entry := ttk.Entry(last_score_player_id_border, width=17)).pack(padx=7, pady=3)
-(last_score_osu_mode_border := ttk.LabelFrame(last_score_settings_border, text="Режим:")).pack(side=TOP, anchor=NW, padx=10, pady=3)
-(last_score_osu_mode_combobox := ttk.Combobox(last_score_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly", width=14)).pack(side=LEFT, padx=7, pady=3)
-(last_score_progressbar_border := ttk.LabelFrame(last_score_settings_border, text="Прогресс:")).pack(side=TOP, anchor=NW, padx=10, pady=3)
-(last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", length=107, maximum=55)).pack(side=TOP, anchor=CENTER, padx=7, pady=3)
+(last_score_osu_mode_border := ttk.LabelFrame(last_score_settings_border, text="Режим:")).pack(side=TOP, anchor=CENTER, fill=X, padx=10, pady=3)
+(last_score_osu_mode_combobox := ttk.Combobox(last_score_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly", width=14)).pack(side=LEFT, expand=True, padx=7, pady=3)
+(last_score_progressbar_border := ttk.LabelFrame(last_score_settings_border, text="Прогресс:")).pack(side=TOP, anchor=CENTER, fill=X, padx=10, pady=3)
+(last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", maximum=55)).pack(side=TOP, anchor=CENTER, fill=X, expand=True, padx=8, pady=3)
 (last_score_start := ttk.Button(last_score_settings_border, text="Запустить", command=last_score_parsing_start, width=20)).pack(side=TOP, anchor=NW, padx=8, pady=7)
 last_score_stop = ttk.Button(last_score_settings_border, text="Остановить", command=lambda: threading.Thread(target=last_score_parsing_stop, daemon=True).start(), width=20)
 (last_score_fastmode_switch := ttk.Checkbutton(last_score_settings_border, text="Быстрый режим", variable=fastmode, command=fastmode_switched)).pack(side=BOTTOM, anchor=CENTER, padx=10, pady=10)
@@ -391,9 +445,9 @@ last_score_stop = ttk.Button(last_score_settings_border, text="Останови�
 # Подстановка значений и отрисовка главного меню
 try:
     if (osu_path := winreg.QueryValueEx(registry_path_settings, "osu_path")[0]) == "":
-        osu_path = f"{os.getenv("LOCALAPPDATA")}\\osu!"
+        osu_path = f"Директория osu! не найдена!"
 except:
-    osu_path = f"{os.getenv("LOCALAPPDATA")}\\osu!"
+    osu_path = f"Директория osu! не найдена!"
 
 try:
     app_id_entry.insert(END, (client_id := winreg.QueryValueEx(registry_path_application, "client_id")[0]))
