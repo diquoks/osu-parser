@@ -18,7 +18,7 @@ from tkinter import filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v0.7.7"
+program_version = "v0.7.7.1"
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -135,7 +135,7 @@ def open_additional_settings():
     (additional_frame := ttk.Frame(additional_settings)).pack(fill=BOTH, expand=True, side=TOP)
     (additional_left_frame := ttk.Frame(additional_frame)).pack(fill=BOTH, side=LEFT, pady=5)
     (additional_right_frame := ttk.Frame(additional_frame)).pack(fill=BOTH, side=RIGHT, pady=5)
-    (additional_last_score__settings_label := ttk.Label(additional_left_frame, text="Настройки парсинга")).pack(side=TOP, anchor=N, padx=5)
+    (additional_last_score_settings_label := ttk.Label(additional_left_frame, text="Настройки парсинга")).pack(side=TOP, anchor=N, padx=5)
     (additional_ignore_classic := ttk.Checkbutton(additional_left_frame, text="Игнорировать Classic", variable=ignore_classic, command=ignore_classic_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_include_fails := ttk.Checkbutton(additional_left_frame, text="Включать фейлы", variable=include_fails, command=include_fails_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_recalculations := ttk.Checkbutton(additional_left_frame, text="Расчёт pp за FC и SS", variable=recalculations)).pack(side=TOP, anchor=NW, padx=5, pady=5)
@@ -244,58 +244,61 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     while last_score_parsing_status:
         if last_score_parsing_status:
             last_score_update_label.config(text="Обновление...")
-            last_score_progressbar.config(value=35)
+            last_score_progressbar.config(value=25)
             if (score := get_last_score(client_id, client_secret, player_id, osu_mode)) is not None:
-                weight = get_score_weight(client_id, client_secret, player_id, score.id, osu_mode)
-                if last_score_parsing_status:
-                    last_score_progressbar.config(value=45)
-                    player = get_profile(client_id, client_secret, player_id, osu_mode)
-                    if previous_score[1] != score.id:
+                if previous_score[1] != score.id:
+                    weight = get_score_weight(client_id, client_secret, player_id, score.id, osu_mode)
+                    if last_score_parsing_status:
+                        last_score_progressbar.config(value=35)
+                        player = get_profile(client_id, client_secret, player_id, osu_mode)
                         previous_score = [player.statistics.pp, score.id, player.statistics.pp - previous_score[0]]
-                if last_score_parsing_status:
-                    last_score_progressbar.config(value=55)
-                    beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
-                    beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode)
-                    recalculation = ""
-                    mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
-                if last_score_parsing_status and bool(recalculations.get()) and osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
-                    beatmap_path = ""
-                    lazer_score = "CL" not in mods_list
-                    try:
-                        for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
-                            beatmap.version = beatmap.version.replace(i, "")
-                        beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
-                    except IndexError:
-                        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться в новом элементе GUI
-                    except:
-                        print(traceback.format_exc()) # Для отладки
-                    else:
-                        if beatmap_attributes.type.value == osu_mode == osu.GameModeStr.STANDARD.value:
-                            if score.max_combo / beatmap_attributes.max_combo < 0.975:
-                                recalculation = f", FC: {round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp, SS: {round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
-                            else:
-                                recalculation = f", SS: {round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
-                if last_score_parsing_status:
-                    last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
-                    last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
-                    last_score_link_label.config(text=f"https://osu.ppy.sh/scores/{score.id}")
-                    last_score_link_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/scores/{score.id}"))
-                    last_score_map_label.config(text=f"{score.beatmapset.artist} - {score.beatmapset.title} от {score.beatmapset.creator}")
-                    last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}){recalculation}")
-                    last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}" if score.pp is not None else ""}")
-                    last_score_mods_label.config(text=f"{mods_str if (mods_str := f"Моды: {", ".join(map(str, ((mods_list, mods_list.remove("CL") if "CL" in mods_list and bool(ignore_classic.get()) else None), mods_list if mods_list is not None else "")[1]))}") != "Моды: " else ""}".replace("None", "0"))
-                    last_score_grades_label.config(text=f"Ранк: {score.rank.name.replace("SILVER_SS", "SS+").replace("SILVER_S", "S+")}, Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
-                    if osu_mode == osu.GameModeStr.STANDARD.value:
-                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
-                    elif osu_mode == osu.GameModeStr.TAIKO.value:
-                        last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
-                    elif osu_mode == osu.GameModeStr.CATCH.value:
-                        last_score_scores_label.config(text=f"Fruits: {score.statistics.great}/{score.maximum_statistics.great}, Ticks: {score.statistics.large_tick_hit}/{score.maximum_statistics.large_tick_hit}, Droplets: {score.statistics.small_tick_hit}/{score.maximum_statistics.small_tick_hit}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
-                    elif osu_mode == osu.GameModeStr.MANIA.value:
-                        last_score_scores_label.config(text=f"Max: {score.statistics.perfect}/{score.maximum_statistics.perfect}, 300: {score.statistics.great}, 200: {score.statistics.good}".replace("None", "0"))
-                        last_score_scores_additional_label.config(text=f"100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
+                    if last_score_parsing_status:
+                        last_score_progressbar.config(value=45)
+                        beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
+                        beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode)
+                        recalculation = ""
+                        mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
+                    if last_score_parsing_status and bool(recalculations.get()) and osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
+                        beatmap_path = ""
+                        lazer_score = "CL" not in mods_list
+                        try:
+                            for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
+                                beatmap.version = beatmap.version.replace(i, "")
+                            beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
+                        except IndexError:
+                            print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться в новом элементе GUI
+                        except:
+                            print(traceback.format_exc()) # Для отладки
+                        else:
+                            if beatmap_attributes.type.value == osu_mode == osu.GameModeStr.STANDARD.value:
+                                if score.max_combo / beatmap_attributes.max_combo < 0.975:
+                                    recalculation = f", FC: {round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp, SS: {round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
+                                else:
+                                    recalculation = f", SS: {round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score, hitresult_priority=rosu.HitResultPriority.BestCase).calculate(rosu.Beatmap(path=beatmap_path)).pp, 2)}pp"
+                    if last_score_parsing_status:
+                        last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+                        last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
+                        last_score_link_label.config(text=f"https://osu.ppy.sh/scores/{score.id}")
+                        last_score_link_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/scores/{score.id}"))
+                        last_score_map_label.config(text=f"{score.beatmapset.artist} - {score.beatmapset.title} от {score.beatmapset.creator}")
+                        last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}){recalculation}")
+                        last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}" if score.pp is not None else ""}")
+                        last_score_mods_label.config(text=f"{mods_str if (mods_str := f"Моды: {", ".join(map(str, ((mods_list, mods_list.remove("CL") if "CL" in mods_list and bool(ignore_classic.get()) else None), mods_list if mods_list is not None else "")[1]))}") != "Моды: " else ""}".replace("None", "0"))
+                        last_score_grades_label.config(text=f"Ранк: {score.rank.name.replace("SILVER_SS", "SS+").replace("SILVER_S", "S+")}, Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
+                        if osu_mode == osu.GameModeStr.STANDARD.value:
+                            last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
+                        elif osu_mode == osu.GameModeStr.TAIKO.value:
+                            last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
+                        elif osu_mode == osu.GameModeStr.CATCH.value:
+                            last_score_scores_label.config(text=f"Fruits: {score.statistics.great}/{score.maximum_statistics.great}, Ticks: {score.statistics.large_tick_hit}/{score.maximum_statistics.large_tick_hit}, Droplets: {score.statistics.small_tick_hit}/{score.maximum_statistics.small_tick_hit}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
+                        elif osu_mode == osu.GameModeStr.MANIA.value:
+                            last_score_scores_label.config(text=f"Max: {score.statistics.perfect}/{score.maximum_statistics.perfect}, 300: {score.statistics.great}, 200: {score.statistics.good}".replace("None", "0"))
+                            last_score_scores_additional_label.config(text=f"100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}, {"PASSED" if score.passed else "FAILED"}".replace("None", "0"))
+                else:
+                    last_score_progressbar.config(value=45)
+                    time.sleep(0.5)
             else:
-                last_score_progressbar.config(value=55)
+                last_score_progressbar.config(value=45)
                 player = get_profile(client_id, client_secret, player_id, osu_mode)
                 try:
                     last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
@@ -451,7 +454,7 @@ last_score = ttk.Frame(root)
 (last_score_osu_mode_border := ttk.LabelFrame(last_score_settings_border, text="Режим:")).pack(fill=X, side=TOP, anchor=CENTER, padx=10, pady=3)
 (last_score_osu_mode_combobox := ttk.Combobox(last_score_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly", width=14)).pack(expand=True, side=LEFT, padx=7, pady=3)
 (last_score_progressbar_border := ttk.LabelFrame(last_score_settings_border, text="Прогресс:")).pack(side=TOP, anchor=CENTER, fill=X, padx=10, pady=3)
-(last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", maximum=55)).pack(fill=X, expand=True, side=TOP, anchor=CENTER, padx=8, pady=3)
+(last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", maximum=45)).pack(fill=X, expand=True, side=TOP, anchor=CENTER, padx=8, pady=3)
 (last_score_start := ttk.Button(last_score_settings_border, text="Запустить", command=last_score_parsing_start, width=20)).pack(side=TOP, anchor=NW, padx=8, pady=7)
 last_score_stop = ttk.Button(last_score_settings_border, text="Остановить", command=lambda: threading.Thread(target=last_score_parsing_stop, daemon=True).start(), width=20)
 (last_score_fastmode_switch := ttk.Checkbutton(last_score_settings_border, text="Быстрый режим", variable=fastmode, command=fastmode_switched)).pack(side=BOTTOM, anchor=CENTER, padx=10, pady=10)
