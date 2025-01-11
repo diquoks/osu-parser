@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.2" # β используется для бета-версий
+program_version = "v1.0.3" # β используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -283,7 +283,10 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     last_score_update_label.config(text="Обновление...")
     last_score_progressbar.config(value=30)
     if (player := get_profile(client_id, client_secret, player_id, osu_mode)) is not None:
+        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]
         previous_score = [player.statistics.pp, None, 0]
+        last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+        last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
     else:
         last_score_progressbar.config(mode="determinate")
         last_score_update_label.config(text="")
@@ -294,11 +297,12 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
             last_score_update_label.config(text="Обновление...")
             last_score_progressbar.config(value=30)
             if (score := get_last_score(client_id, client_secret, player_id, osu_mode)) is not None:
-                if previous_score[1] != score.id:
+                if previous_score[1] != score.id or previous_settings != [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]:
                     weight = get_score_weight(client_id, client_secret, player_id, score.id, osu_mode)
                     if last_score_parsing_status:
                         last_score_progressbar.config(value=45)
                         player = get_profile(client_id, client_secret, player_id, osu_mode)
+                        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]
                         previous_score = [player.statistics.pp, score.id, player.statistics.pp - previous_score[0]]
                     if last_score_parsing_status:
                         last_score_progressbar.config(value=60)
