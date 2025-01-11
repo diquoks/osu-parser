@@ -51,7 +51,8 @@ osu!parser - программа для парсинга рекордов и пр
 
 ### Смена языка / language change
 
-Смена языка пока недоступна, ведь перед работой над ней нужно переписать код на customtkinter.
+Смена языка пока недоступна, ведь перед работой над ней нужно переписать код на customtkinter.\
+The language change is not available yet, because I need to rewrite the code on customtkinter before working on it.
 
 ### Парсинг рекордов
 
