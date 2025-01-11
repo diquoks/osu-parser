@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.1" # β используется для бета-версий
+program_version = "v1.0.2" # β используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -122,8 +122,10 @@ def get_score_weight(client_id, client_secret, player_id, score_id, osu_mode):
 
 # Функции tkinter
 def window_closed():
-    winreg.SetValueEx(registry_path_previous, "window_position", 0, winreg.REG_SZ, f"{[root.geometry(), root.state()]}")
-    root.destroy()
+    try:
+        winreg.SetValueEx(registry_path_previous, "window_position", 0, winreg.REG_SZ, f"{[root.geometry(), root.state()]}")
+    finally:
+        root.destroy()
 
 def open_settings():
     global main_menu, settings
@@ -277,6 +279,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     winreg.SetValueEx(registry_path_previous, "player_id", 0, winreg.REG_SZ, str(player_id))
     winreg.SetValueEx(registry_path_previous, "osu_mode", 0, winreg.REG_SZ, osu_mode)
     main_menu_last_score_button.configure(text="Парсинг рекордов (!)")
+    last_score_player_label.config(text="Поиск игрока...")
     last_score_update_label.config(text="Обновление...")
     last_score_progressbar.config(value=30)
     if (player := get_profile(client_id, client_secret, player_id, osu_mode)) is not None:
@@ -378,20 +381,17 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                 last_score_link_label.config(text="Последний рекорд отсутствует!")
                 last_score_link_label.unbind("<Button-1>")
             fastmode_current = bool(fastmode.get())
-            last_score_progressbar.config(value=0)
             for i in range(3 if fastmode_current else 15, -1, -1):
                 if last_score_parsing_status:
+                    last_score_progressbar.config(value=(15 - (i * 5 if fastmode_current else i)))
                     if i == 0:
                         last_score_update_label.config(text=f"Обновление...")
                     else:
                         last_score_update_label.config(text=f"Обновление через: {i}")
                     time.sleep(1)
-                    last_score_progressbar.config(value=(20 - (i * 5 if fastmode_current else i)))
     main_menu_last_score_button.configure(text="Парсинг рекордов")
     last_score_update_label.config(text="")
     last_score_progressbar.config(value=0)
-    last_score_player_label.config(text="")
-    last_score_player_label.unbind("<Button-1>")
     last_score_link_label.config(text="")
     last_score_link_label.unbind("<Button-1>")
     last_score_map_label.config(text="")
@@ -431,6 +431,8 @@ def last_score_parsing_stop():
     last_score_progressbar.config(mode="indeterminate")
     last_score_progressbar.start()
     last_score_parsing_thread.join()
+    last_score_player_label.config(text="")
+    last_score_player_label.unbind("<Button-1>")
     last_score_progressbar.config(mode="determinate")
     last_score_progressbar.stop()
 
