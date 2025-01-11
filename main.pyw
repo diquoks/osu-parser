@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0" # β используется для бета-версий
+program_version = "v1.0.1" # β используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -154,7 +154,7 @@ def open_additional_settings():
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
     additional_window.geometry(f"{str(int(350*ui_scale))}x{str(int(200*ui_scale))}+{int(root.geometry().split("+")[1]) + 30}+{int(root.geometry().split("+")[2]) + 60}")
-    additional_window.iconbitmap(resource_path("window_icon.ico"))
+    additional_window.iconbitmap(resource_path("assets/icons/window_icon.ico"))
     additional_window.title("настройки osu!parser")
     additional_window.attributes("-topmost", True)
     additional_window.protocol("WM_DELETE_WINDOW", close_additional_settings)
@@ -334,7 +334,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                                 recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
                             if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
                                 recalculation = f", FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
-                            elif score.statistics.great != score.maximum_statistics.great if beatmap_attributes.type.value == osu_mode != osu.GameModeStr.MANIA.value else score.statistics.perfect != score.maximum_statistics.perfect:
+                            elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value == osu_mode != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
                                 print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp") # Для отладки
                                 recalculation = f", SS: {recalculated_ss}pp"
                             else:
@@ -631,7 +631,7 @@ root.geometry(window_position[0])
 root.state(window_position[1])
 root.minsize(int(550 * ui_scale), int(300 * ui_scale))
 root.resizable(width=True, height=True)
-root.iconbitmap(resource_path("window_icon.ico"))
+root.iconbitmap(resource_path("assets/icons/window_icon.ico"))
 root.title("osu!parser")
 root.attributes("-topmost", bool(topmost.get()))
 root.protocol("WM_DELETE_WINDOW", window_closed)
