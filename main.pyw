@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.3" # β используется для бета-версий
+program_version = "v1.0.4" # β в названии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -58,45 +58,46 @@ def resource_path(relative_path):
 # Функции requests
 def program_version_status():
     global program_version, main_menu_program_version_label
-    if "β" not in program_version and requests.get("https://github.com/diquoks/osu-parser/releases/latest").url != f"https://github.com/diquoks/osu-parser/releases/tag/{program_version}":
-        program_version = f"{program_version}\n(Доступно обновление!)"
-        main_menu_program_version_label.config(text=program_version)
-        main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases/latest"))
+    try:
+        if "β" not in program_version and requests.get("https://github.com/diquoks/osu-parser/releases/latest").url != f"https://github.com/diquoks/osu-parser/releases/tag/{program_version}":
+            program_version = f"{program_version}\n(Доступно обновление!)"
+            main_menu_program_version_label.config(text=program_version)
+            main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases/latest"))
+    except requests.exceptions.ConnectionError:
+        print(f"\n{traceback.format_exc()}\nОтсутствует подключение к интернету!")
 
 # Функции osu.py
 def get_profile(client_id, client_secret, player_id, osu_mode):
     try:
         return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user(user=player_id, mode=osu_mode)
-    except Exception as e:
-        if "not found" not in str(e).lower():
-            print("\nПовтор get_profile()") # Для отладки
-            return get_profile(client_id, client_secret, player_id, osu_mode)
-        else:
-            return None
+    except requests.exceptions.HTTPError:
+        return None
+    except:
+        print(f"\n{traceback.format_exc()}\nПовтор get_profile()")  # Для отладки
+        return get_profile(client_id, client_secret, player_id, osu_mode)
 
 def get_beatmap(client_id, client_secret, beatmap_id):
     try:
         return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_beatmap(beatmap=beatmap_id)
     except:
-        print("\nПовтор get_beatmap()") # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_beatmap()") # Для отладки
         return get_beatmap(client_id, client_secret, beatmap_id)
 
 def get_beatmap_attributes(client_id, client_secret, beatmap_id, osu_mode):
     try:
         return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_beatmap_attributes(beatmap=beatmap_id, ruleset=osu_mode)
     except:
-        print("\nПовтор get_beatmap_attributes()") # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_beatmap_attributes()") # Для отладки
         return get_beatmap_attributes(client_id, client_secret, beatmap_id, osu_mode)
 
 def get_score(client_id, client_secret, score_id):
     try:
         return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_score_by_id_only(score_id=score_id)
-    except Exception as e:
-        if "couldn't be found" not in str(e).lower() and "invalid" not in str(e).lower():
-            print("\nПовтор get_score()") # Для отладки
-            return get_score(client_id, client_secret, score_id)
-        else:
-            return None
+    except osu.exceptions.RequestException:
+        return None
+    except:
+        print(f"\n{traceback.format_exc()}\nПовтор get_score()")  # Для отладки
+        return get_score(client_id, client_secret, score_id)
 
 def get_last_score(client_id, client_secret, player_id, osu_mode):
     try:
@@ -104,7 +105,7 @@ def get_last_score(client_id, client_secret, player_id, osu_mode):
     except IndexError:
         return None
     except:
-        print("\nПовтор get_last_score()") # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_last_score()") # Для отладки
         return get_last_score(client_id, client_secret, player_id, osu_mode)
 
 def get_score_weight(client_id, client_secret, player_id, score_id, osu_mode):
@@ -117,7 +118,7 @@ def get_score_weight(client_id, client_secret, player_id, score_id, osu_mode):
         else:
             return None
     except:
-        print("\nПовтор get_score_weight()") # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_score_weight()") # Для отладки
         return get_score_weight(client_id, client_secret, player_id, score_id, osu_mode)
 
 # Функции tkinter
@@ -532,7 +533,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
             if score is None:
                 text_parsing_status_label.config(text="Рекорд отсутствует!")
         else:
-            print(traceback.format_exc()) # Для отладки
+            print(f"\n{traceback.format_exc()}") # Для отладки
             text_parsing_status_label.config(text="Возникла ошибка!")
             os.remove(filepath)
     else:
@@ -577,187 +578,180 @@ def close_text_parsing():
     text_parsing.pack_forget()
     main_menu.pack(fill=BOTH, expand=True)
 
-# Создание окна
-root = Tk()
-# Объявление переменных tkinter
-try:
-    window_position = ast.literal_eval(winreg.QueryValueEx(registry_path_previous, "window_position")[0])
-except:
-    window_position = [f"{str(int(550 * ui_scale))}x{str(int(300 * ui_scale))}", "normal"]
-
-ignore_classic = IntVar()
-try:
-    ignore_classic.set(int(winreg.QueryValueEx(registry_path_settings, "ignore_classic")[0]))
-except:
-    ignore_classic.set(1)
-
-include_fails = IntVar()
-try:
-    include_fails.set(int(winreg.QueryValueEx(registry_path_settings, "include_fails")[0]))
-except:
-    include_fails.set(0)
-
-recalculations = IntVar()
-try:
-    recalculations.set(int(winreg.QueryValueEx(registry_path_settings, "recalculations")[0]))
-except:
-    recalculations.set(1)
-
-autoscaling = IntVar()
-try:
-    autoscaling.set(int(winreg.QueryValueEx(registry_path_settings, "autoscaling")[0]))
-except:
-    autoscaling.set(1)
-
-topmost = IntVar()
-try:
-    topmost.set(int(winreg.QueryValueEx(registry_path_settings, "topmost")[0]))
-except:
-    topmost.set(0)
-
-fastmode = IntVar()
-try:
-    fastmode.set(int(winreg.QueryValueEx(registry_path_settings, "fastmode")[0]))
-except:
-    fastmode.set(0)
-
-text_parsing_mode = IntVar()
-try:
-    text_parsing_mode.set(int(winreg.QueryValueEx(registry_path_settings, "text_parsing")[0]))
-except:
-    text_parsing_mode.set(0)
-
-empty_values = IntVar()
-try:
-    empty_values.set(int(winreg.QueryValueEx(registry_path_settings, "empty_values")[0]))
-except:
-    empty_values.set(1)
-# Параметры окна
-root.geometry(window_position[0])
-root.state(window_position[1])
-root.minsize(int(550 * ui_scale), int(300 * ui_scale))
-root.resizable(width=True, height=True)
-root.iconbitmap(resource_path("assets/icons/window_icon.ico"))
-root.title("osu!parser")
-root.attributes("-topmost", bool(topmost.get()))
-root.protocol("WM_DELETE_WINDOW", window_closed)
-# Главное меню
-main_menu = ttk.Frame(root)
-(main_menu_title := ttk.Label(main_menu, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
-(main_menu_last_score_button := ttk.Button(main_menu, text="Парсинг рекордов", command=open_last_score, width=25)).pack(side=TOP, anchor=CENTER, pady=(40, 30))
-(main_menu_recalculation_button := ttk.Button(main_menu, text="Калькулятор pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=25)).pack(side=TOP, anchor=CENTER, pady=10)
-(main_menu_text_parsing_button := ttk.Button(main_menu, text="Текстовый парсинг", command=open_text_parsing, width=25)).pack(side=TOP, anchor=CENTER, pady=10)
-(main_menu_bottom_frame := ttk.Frame(main_menu)).pack(fill=BOTH, side=BOTTOM)
-(main_menu_language_button := ttk.Button(main_menu_bottom_frame, text="Язык / Language", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.4!\nWill be available in version 1.4!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
-(main_menu_program_version_label := ttk.Label(main_menu_bottom_frame, text=program_version, justify=CENTER)).pack(expand=True, side=LEFT)
-main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases"))
-(main_menu_settings_button := ttk.Button(main_menu_bottom_frame, text="Настройки", command=open_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
-# Настройки
-settings = ttk.Frame(root)
-(settings_title := ttk.Label(settings, text="настройки osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
-(settings_app_settings_border := ttk.LabelFrame(settings)).pack(side=TOP, anchor=CENTER, pady=(35, 10))
-(settings_app_id_border := ttk.LabelFrame(settings_app_settings_border, text="ID:")).pack(side=LEFT, anchor=NW, padx=10, pady=8)
-(settings_app_id_entry := ttk.Entry(settings_app_id_border, width=7)).pack(side=LEFT, anchor=NW, padx=7, pady=5)
-(settings_app_secret_border := ttk.LabelFrame(settings_app_settings_border, text="Секретный ключ приложения:")).pack(side=LEFT, anchor=NW, pady=8)
-(settings_app_secret_entry := ttk.Entry(settings_app_secret_border, width=49)).pack(side=LEFT, anchor=NW, padx=7, pady=5)
-(settings_app_settings_save_button := ttk.Button(settings_app_settings_border, text="ОК", command=save_settings, width=5)).pack(side=LEFT, anchor=NW, padx=7, pady=15, ipady=7)
-(settings_app_settings_setup_label_link := ttk.Label(settings, text="Создайте своё приложение: https://osu.ppy.sh/home/account/edit#oauth")).pack(side=TOP, anchor=CENTER, pady=1)
-settings_app_settings_setup_label_link.bind("<Button-1>", lambda i: webbrowser.open_new("https://osu.ppy.sh/home/account/edit#oauth"))
-(settings_app_settings_setup_label_path := ttk.Label(settings, text="OAuth -> мои приложения -> новое приложение OAuth -> Зарегистрировать")).pack(side=TOP, anchor=CENTER)
-(settings_bottom_frame := ttk.Frame(settings)).pack(fill=BOTH, side=BOTTOM)
-(settings_additional_button := ttk.Button(settings_bottom_frame, text="Дополнительно", command=open_additional_settings, width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
-(settings_help_button := ttk.Button(settings, text="Помощь", command=lambda: webbrowser.open_new("https://github.com/diquoks/osu-parser/blob/main/README.md"), width=15)).pack(side=BOTTOM, anchor=SW, padx=10)
-(settings_credits_label := ttk.Label(settings_bottom_frame, text="Сделано diquoks ❤")).pack(expand=True, side=LEFT)
-settings_credits_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://diquoks.ru"))
-(settings_close_button := ttk.Button(settings_bottom_frame, text="Назад", command=close_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
-# Последний рекорд
-last_score = ttk.Frame(root)
-(last_score_title := ttk.Label(last_score, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
-(last_score_settings_border := ttk.LabelFrame(last_score)).pack(fill=BOTH, side=LEFT, anchor=CENTER)
-(last_score_player_id_frame := ttk.Frame(last_score_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=10, pady=3)
-(last_score_player_id_border := ttk.LabelFrame(last_score_player_id_frame, text="ID игрока:")).pack(fill=X, side=TOP, anchor=CENTER, pady=3)
-(last_score_player_id_entry := ttk.Entry(last_score_player_id_border, width=17)).pack(padx=7, pady=5)
-(last_score_osu_mode_border := ttk.LabelFrame(last_score_settings_border, text="Режим:")).pack(fill=X, side=TOP, anchor=CENTER, padx=10, pady=3)
-(last_score_osu_mode_combobox := ttk.Combobox(last_score_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly", width=14)).pack(expand=True, side=LEFT, padx=7, pady=5)
-(last_score_progressbar_border := ttk.LabelFrame(last_score_settings_border, text="Прогресс:")).pack(side=TOP, anchor=CENTER, fill=X, padx=10, pady=3)
-(last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", maximum=60)).pack(fill=X, expand=True, side=TOP, anchor=CENTER, padx=8, pady=5)
-(last_score_start_button := ttk.Button(last_score_settings_border, text="Запустить", command=last_score_parsing_start, width=20)).pack(side=TOP, anchor=CENTER, padx=8, pady=7)
-last_score_stop_button = ttk.Button(last_score_settings_border, text="Остановить", command=lambda: threading.Thread(target=last_score_parsing_stop, daemon=True).start(), width=20)
-(last_score_fastmode_switch := ttk.Checkbutton(last_score_settings_border, text="Быстрый режим", variable=fastmode, command=fastmode_switched)).pack(side=BOTTOM, anchor=CENTER, padx=10, pady=10)
-(last_score_update_top_frame := ttk.Frame(last_score)).pack(fill=BOTH, side=TOP, pady=10)
-(last_score_player_label := ttk.Label(last_score_update_top_frame)).pack(side=LEFT, anchor=NW, padx=10)
-(last_score_update_label := ttk.Label(last_score_update_top_frame)).pack(side=RIGHT, anchor=NE, padx=16)
-(last_score_link_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_map_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_diff_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_pp_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_mods_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_grades_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_scores_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-(last_score_scores_additional_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10)
-(last_score_bottom_frame := ttk.Frame(last_score)).pack(fill=X, side=BOTTOM)
-(last_score_recalculate_button := ttk.Button(last_score_bottom_frame, text="Расчитать pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
-(last_score_close_button := ttk.Button(last_score_bottom_frame, text="Назад", command=close_last_score, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
-# Текстовый парсинг
-text_parsing = ttk.Frame(root)
-(text_parsing_title := ttk.Label(text_parsing, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
-(text_parsing_settings_border := ttk.LabelFrame(text_parsing)).pack(fill=BOTH, side=LEFT, anchor=CENTER)
-(text_parsing_id_frame := ttk.Frame(text_parsing_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=10, pady=3)
-(text_parsing_id_border := ttk.LabelFrame(text_parsing_id_frame, text=f"ID{" игрока" if text_parsing_mode.get() == 0 else " рекорда" if text_parsing_mode.get() == 1 else ""}:")).pack(fill=X, side=TOP, anchor=CENTER, pady=3)
-(text_parsing_id_entry := ttk.Entry(text_parsing_id_border, width=17)).pack(padx=7, pady=5)
-(text_parsing_osu_mode_border := ttk.LabelFrame(text_parsing_settings_border, text="Режим:")).pack(side=TOP, anchor=CENTER, padx=10, pady=3)
-(text_parsing_osu_mode_combobox := ttk.Combobox(text_parsing_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly" if text_parsing_mode.get() == 0 else DISABLED if text_parsing_mode.get() == 1 else ACTIVE, width=14)).pack(side=TOP, anchor=NW, padx=7, pady=5)
-(text_parsing_mode_border := ttk.LabelFrame(text_parsing_settings_border, text="Режим парсинга:")).pack(fill=X, side=TOP, anchor=CENTER, padx=10, pady=3)
-(text_parsing_profile_switch := ttk.Radiobutton(text_parsing_mode_border, text="Профиль", value=0, command=text_parsing_mode_selected, variable=text_parsing_mode)).pack(side=TOP, anchor=NW, padx=8, pady=(5, 3))
-(text_parsing_score_switch := ttk.Radiobutton(text_parsing_mode_border, text="Рекорд", value=1, command=text_parsing_mode_selected, variable=text_parsing_mode)).pack(side=TOP, anchor=NW, padx=8, pady=3)
-(text_parsing_save_button := ttk.Button(text_parsing_settings_border, text="Сохранить", command=text_parsing_save, width=20)).pack(side=BOTTOM, anchor=CENTER, padx=8, pady=8)
-(text_parsing_status_label := ttk.Label(text_parsing)).pack(side=TOP, anchor=NE, padx=10, pady=10)
-(text_parsing_bottom_frame := ttk.Frame(text_parsing)).pack(fill=BOTH, side=BOTTOM)
-(text_parsing_path_label := ttk.Label(text_parsing, text=text_parsing_path)).pack(side=BOTTOM, anchor=NW, padx=10)
-text_parsing_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {text_parsing_path}"))
-(text_parsing_path_select_button := ttk.Button(text_parsing_bottom_frame, text="Выбрать папку...", command=text_parsing_path_select, width=20)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
-(text_parsing_empty_values_switch := ttk.Checkbutton(text_parsing_bottom_frame, text="Пустые значения", variable=empty_values, command=empty_values_switched)).pack(fill=Y, expand=True, side=LEFT, anchor=CENTER, pady=10)
-(text_parsing_close_button := ttk.Button(text_parsing_bottom_frame, text="Назад", command=close_text_parsing, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
-# Подстановка значений и отрисовка главного меню
-threading.Thread(target=program_version_status, daemon=True).start()
-try:
+if __name__ == '__main__':
+    # Создание окна
+    root = Tk()
+    # Объявление переменных tkinter
     try:
-        settings_app_id_entry.insert(END, (client_id := winreg.QueryValueEx(registry_path_application, "client_id")[0]))
+        window_position = ast.literal_eval(winreg.QueryValueEx(registry_path_previous, "window_position")[0])
+    except:
+        window_position = [f"{str(int(550 * ui_scale))}x{str(int(300 * ui_scale))}", "normal"]
+    ignore_classic = IntVar()
+    try:
+        ignore_classic.set(int(winreg.QueryValueEx(registry_path_settings, "ignore_classic")[0]))
+    except:
+        ignore_classic.set(1)
+    include_fails = IntVar()
+    try:
+        include_fails.set(int(winreg.QueryValueEx(registry_path_settings, "include_fails")[0]))
+    except:
+        include_fails.set(0)
+    recalculations = IntVar()
+    try:
+        recalculations.set(int(winreg.QueryValueEx(registry_path_settings, "recalculations")[0]))
+    except:
+        recalculations.set(1)
+    autoscaling = IntVar()
+    try:
+        autoscaling.set(int(winreg.QueryValueEx(registry_path_settings, "autoscaling")[0]))
+    except:
+        autoscaling.set(1)
+    topmost = IntVar()
+    try:
+        topmost.set(int(winreg.QueryValueEx(registry_path_settings, "topmost")[0]))
+    except:
+        topmost.set(0)
+    fastmode = IntVar()
+    try:
+        fastmode.set(int(winreg.QueryValueEx(registry_path_settings, "fastmode")[0]))
+    except:
+        fastmode.set(0)
+    text_parsing_mode = IntVar()
+    try:
+        text_parsing_mode.set(int(winreg.QueryValueEx(registry_path_settings, "text_parsing")[0]))
+    except:
+        text_parsing_mode.set(0)
+    empty_values = IntVar()
+    try:
+        empty_values.set(int(winreg.QueryValueEx(registry_path_settings, "empty_values")[0]))
+    except:
+        empty_values.set(1)
+    # Параметры окна
+    root.geometry(window_position[0])
+    root.state(window_position[1])
+    root.minsize(int(550 * ui_scale), int(300 * ui_scale))
+    root.resizable(width=True, height=True)
+    root.iconbitmap(resource_path("assets/icons/window_icon.ico"))
+    root.title("osu!parser")
+    root.attributes("-topmost", bool(topmost.get()))
+    root.protocol("WM_DELETE_WINDOW", window_closed)
+    # Главное меню
+    main_menu = ttk.Frame(root)
+    (main_menu_title := ttk.Label(main_menu, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
+    (main_menu_last_score_button := ttk.Button(main_menu, text="Парсинг рекордов", command=open_last_score, width=25)).pack(side=TOP, anchor=CENTER, pady=(40, 30))
+    (main_menu_recalculation_button := ttk.Button(main_menu, text="Калькулятор pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=25)).pack(side=TOP, anchor=CENTER, pady=10)
+    (main_menu_text_parsing_button := ttk.Button(main_menu, text="Текстовый парсинг", command=open_text_parsing, width=25)).pack(side=TOP, anchor=CENTER, pady=10)
+    (main_menu_bottom_frame := ttk.Frame(main_menu)).pack(fill=BOTH, side=BOTTOM)
+    (main_menu_language_button := ttk.Button(main_menu_bottom_frame, text="Язык / Language", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.4!\nWill be available in version 1.4!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (main_menu_program_version_label := ttk.Label(main_menu_bottom_frame, text=program_version, justify=CENTER)).pack(expand=True, side=LEFT)
+    main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases"))
+    (main_menu_settings_button := ttk.Button(main_menu_bottom_frame, text="Настройки", command=open_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
+    # Настройки
+    settings = ttk.Frame(root)
+    (settings_title := ttk.Label(settings, text="настройки osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
+    (settings_app_settings_border := ttk.LabelFrame(settings)).pack(side=TOP, anchor=CENTER, pady=(35, 10))
+    (settings_app_id_border := ttk.LabelFrame(settings_app_settings_border, text="ID:")).pack(side=LEFT, anchor=NW, padx=10, pady=8)
+    (settings_app_id_entry := ttk.Entry(settings_app_id_border, width=7)).pack(side=LEFT, anchor=NW, padx=7, pady=5)
+    (settings_app_secret_border := ttk.LabelFrame(settings_app_settings_border, text="Секретный ключ приложения:")).pack(side=LEFT, anchor=NW, pady=8)
+    (settings_app_secret_entry := ttk.Entry(settings_app_secret_border, width=49)).pack(side=LEFT, anchor=NW, padx=7, pady=5)
+    (settings_app_settings_save_button := ttk.Button(settings_app_settings_border, text="ОК", command=save_settings, width=5)).pack(side=LEFT, anchor=NW, padx=7, pady=15, ipady=7)
+    (settings_app_settings_setup_label_link := ttk.Label(settings, text="Создайте своё приложение: https://osu.ppy.sh/home/account/edit#oauth")).pack(side=TOP, anchor=CENTER, pady=1)
+    settings_app_settings_setup_label_link.bind("<Button-1>", lambda i: webbrowser.open_new("https://osu.ppy.sh/home/account/edit#oauth"))
+    (settings_app_settings_setup_label_path := ttk.Label(settings, text="OAuth -> мои приложения -> новое приложение OAuth -> Зарегистрировать")).pack(side=TOP, anchor=CENTER)
+    (settings_bottom_frame := ttk.Frame(settings)).pack(fill=BOTH, side=BOTTOM)
+    (settings_additional_button := ttk.Button(settings_bottom_frame, text="Дополнительно", command=open_additional_settings, width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (settings_help_button := ttk.Button(settings, text="Помощь", command=lambda: webbrowser.open_new("https://github.com/diquoks/osu-parser/blob/main/README.md"), width=15)).pack(side=BOTTOM, anchor=SW, padx=10)
+    (settings_credits_label := ttk.Label(settings_bottom_frame, text="Сделано diquoks ❤")).pack(expand=True, side=LEFT)
+    settings_credits_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://diquoks.ru"))
+    (settings_close_button := ttk.Button(settings_bottom_frame, text="Назад", command=close_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
+    # Последний рекорд
+    last_score = ttk.Frame(root)
+    (last_score_title := ttk.Label(last_score, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
+    (last_score_settings_border := ttk.LabelFrame(last_score)).pack(fill=BOTH, side=LEFT, anchor=CENTER)
+    (last_score_player_id_frame := ttk.Frame(last_score_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=10, pady=3)
+    (last_score_player_id_border := ttk.LabelFrame(last_score_player_id_frame, text="ID игрока:")).pack(fill=X, side=TOP, anchor=CENTER, pady=3)
+    (last_score_player_id_entry := ttk.Entry(last_score_player_id_border, width=17)).pack(padx=7, pady=5)
+    (last_score_osu_mode_border := ttk.LabelFrame(last_score_settings_border, text="Режим:")).pack(fill=X, side=TOP, anchor=CENTER, padx=10, pady=3)
+    (last_score_osu_mode_combobox := ttk.Combobox(last_score_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly", width=14)).pack(expand=True, side=LEFT, padx=7, pady=5)
+    (last_score_progressbar_border := ttk.LabelFrame(last_score_settings_border, text="Прогресс:")).pack(side=TOP, anchor=CENTER, fill=X, padx=10, pady=3)
+    (last_score_progressbar := ttk.Progressbar(last_score_progressbar_border, orient="horizontal", maximum=60)).pack(fill=X, expand=True, side=TOP, anchor=CENTER, padx=8, pady=5)
+    (last_score_start_button := ttk.Button(last_score_settings_border, text="Запустить", command=last_score_parsing_start, width=20)).pack(side=TOP, anchor=CENTER, padx=8, pady=7)
+    last_score_stop_button = ttk.Button(last_score_settings_border, text="Остановить", command=lambda: threading.Thread(target=last_score_parsing_stop, daemon=True).start(), width=20)
+    (last_score_fastmode_switch := ttk.Checkbutton(last_score_settings_border, text="Быстрый режим", variable=fastmode, command=fastmode_switched)).pack(side=BOTTOM, anchor=CENTER, padx=10, pady=10)
+    (last_score_update_top_frame := ttk.Frame(last_score)).pack(fill=BOTH, side=TOP, pady=10)
+    (last_score_player_label := ttk.Label(last_score_update_top_frame)).pack(side=LEFT, anchor=NW, padx=10)
+    (last_score_update_label := ttk.Label(last_score_update_top_frame)).pack(side=RIGHT, anchor=NE, padx=16)
+    (last_score_link_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_map_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_diff_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_pp_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_mods_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_grades_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_scores_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_scores_additional_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10)
+    (last_score_bottom_frame := ttk.Frame(last_score)).pack(fill=X, side=BOTTOM)
+    (last_score_recalculate_button := ttk.Button(last_score_bottom_frame, text="Расчитать pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (last_score_close_button := ttk.Button(last_score_bottom_frame, text="Назад", command=close_last_score, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
+    # Текстовый парсинг
+    text_parsing = ttk.Frame(root)
+    (text_parsing_title := ttk.Label(text_parsing, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
+    (text_parsing_settings_border := ttk.LabelFrame(text_parsing)).pack(fill=BOTH, side=LEFT, anchor=CENTER)
+    (text_parsing_id_frame := ttk.Frame(text_parsing_settings_border)).pack(fill=BOTH, side=TOP, anchor=NW, padx=10, pady=3)
+    (text_parsing_id_border := ttk.LabelFrame(text_parsing_id_frame, text=f"ID{" игрока" if text_parsing_mode.get() == 0 else " рекорда" if text_parsing_mode.get() == 1 else ""}:")).pack(fill=X, side=TOP, anchor=CENTER, pady=3)
+    (text_parsing_id_entry := ttk.Entry(text_parsing_id_border, width=17)).pack(padx=7, pady=5)
+    (text_parsing_osu_mode_border := ttk.LabelFrame(text_parsing_settings_border, text="Режим:")).pack(side=TOP, anchor=CENTER, padx=10, pady=3)
+    (text_parsing_osu_mode_combobox := ttk.Combobox(text_parsing_osu_mode_border, values=["osu!", "osu!taiko", "osu!catch", "osu!mania"], state="readonly" if text_parsing_mode.get() == 0 else DISABLED if text_parsing_mode.get() == 1 else ACTIVE, width=14)).pack(side=TOP, anchor=NW, padx=7, pady=5)
+    (text_parsing_mode_border := ttk.LabelFrame(text_parsing_settings_border, text="Режим парсинга:")).pack(fill=X, side=TOP, anchor=CENTER, padx=10, pady=3)
+    (text_parsing_profile_switch := ttk.Radiobutton(text_parsing_mode_border, text="Профиль", value=0, command=text_parsing_mode_selected, variable=text_parsing_mode)).pack(side=TOP, anchor=NW, padx=8, pady=(5, 3))
+    (text_parsing_score_switch := ttk.Radiobutton(text_parsing_mode_border, text="Рекорд", value=1, command=text_parsing_mode_selected, variable=text_parsing_mode)).pack(side=TOP, anchor=NW, padx=8, pady=3)
+    (text_parsing_save_button := ttk.Button(text_parsing_settings_border, text="Сохранить", command=text_parsing_save, width=20)).pack(side=BOTTOM, anchor=CENTER, padx=8, pady=8)
+    (text_parsing_status_label := ttk.Label(text_parsing)).pack(side=TOP, anchor=NE, padx=10, pady=10)
+    (text_parsing_bottom_frame := ttk.Frame(text_parsing)).pack(fill=BOTH, side=BOTTOM)
+    (text_parsing_path_label := ttk.Label(text_parsing, text=text_parsing_path)).pack(side=BOTTOM, anchor=NW, padx=10)
+    text_parsing_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {text_parsing_path}"))
+    (text_parsing_path_select_button := ttk.Button(text_parsing_bottom_frame, text="Выбрать папку...", command=text_parsing_path_select, width=20)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (text_parsing_empty_values_switch := ttk.Checkbutton(text_parsing_bottom_frame, text="Пустые значения", variable=empty_values, command=empty_values_switched)).pack(fill=Y, expand=True, side=LEFT, anchor=CENTER, pady=10)
+    (text_parsing_close_button := ttk.Button(text_parsing_bottom_frame, text="Назад", command=close_text_parsing, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
+    # Подстановка значений и отрисовка главного меню
+    threading.Thread(target=program_version_status, daemon=True).start()
+    try:
+        try:
+            settings_app_id_entry.insert(END, (client_id := winreg.QueryValueEx(registry_path_application, "client_id")[0]))
+        except:
+            pass
+        try:
+            settings_app_secret_entry.insert(END, (client_secret := winreg.QueryValueEx(registry_path_application, "client_secret")[0]))
+        except:
+            pass
     except:
         pass
     try:
-        settings_app_secret_entry.insert(END, (client_secret := winreg.QueryValueEx(registry_path_application, "client_secret")[0]))
-    except:
-        pass
-except:
-    pass
-try:
-    try:
-        last_score_osu_mode_combobox.current({osu.GameModeStr.STANDARD.value: osu.GameModeInt.STANDARD.value,
-                                              osu.GameModeStr.TAIKO.value: osu.GameModeInt.TAIKO.value,
-                                              osu.GameModeStr.CATCH.value: osu.GameModeInt.CATCH.value,
-                                              osu.GameModeStr.MANIA.value: osu.GameModeInt.MANIA.value}[winreg.QueryValueEx(registry_path_previous, "osu_mode")[0]])
-    except:
-        pass
-    try:
-        last_score_player_id_entry.insert(END, winreg.QueryValueEx(registry_path_previous, "player_id")[0])
-    except:
-        pass
-except:
-    pass
-try:
-    try:
-        text_parsing_osu_mode_combobox.current({osu.GameModeStr.STANDARD.value: osu.GameModeInt.STANDARD.value,
-                                                osu.GameModeStr.TAIKO.value: osu.GameModeInt.TAIKO.value,
-                                                osu.GameModeStr.CATCH.value: osu.GameModeInt.CATCH.value,
-                                                osu.GameModeStr.MANIA.value: osu.GameModeInt.MANIA.value}[winreg.QueryValueEx(registry_path_previous, "osu_mode")[0]])
+        try:
+            last_score_osu_mode_combobox.current({osu.GameModeStr.STANDARD.value: osu.GameModeInt.STANDARD.value,
+                                                  osu.GameModeStr.TAIKO.value: osu.GameModeInt.TAIKO.value,
+                                                  osu.GameModeStr.CATCH.value: osu.GameModeInt.CATCH.value,
+                                                  osu.GameModeStr.MANIA.value: osu.GameModeInt.MANIA.value}[winreg.QueryValueEx(registry_path_previous, "osu_mode")[0]])
+        except:
+            pass
+        try:
+            last_score_player_id_entry.insert(END, winreg.QueryValueEx(registry_path_previous, "player_id")[0])
+        except:
+            pass
     except:
         pass
     try:
-        text_parsing_id_entry.insert(END, winreg.QueryValueEx(registry_path_previous, "text_parsing_profile_id" if text_parsing_mode.get() == 0 else "text_parsing_score_id")[0])
+        try:
+            text_parsing_osu_mode_combobox.current({osu.GameModeStr.STANDARD.value: osu.GameModeInt.STANDARD.value,
+                                                    osu.GameModeStr.TAIKO.value: osu.GameModeInt.TAIKO.value,
+                                                    osu.GameModeStr.CATCH.value: osu.GameModeInt.CATCH.value,
+                                                    osu.GameModeStr.MANIA.value: osu.GameModeInt.MANIA.value}[winreg.QueryValueEx(registry_path_previous, "osu_mode")[0]])
+        except:
+            pass
+        try:
+            text_parsing_id_entry.insert(END, winreg.QueryValueEx(registry_path_previous, "text_parsing_profile_id" if text_parsing_mode.get() == 0 else "text_parsing_score_id")[0])
+        except:
+            pass
     except:
         pass
-except:
-    pass
-main_menu.pack(fill=BOTH, expand=True)
-root.mainloop()
+    main_menu.pack(fill=BOTH, expand=True)
+    root.mainloop()
