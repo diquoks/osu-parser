@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.4" # β в названии используется для бета-версий
+program_version = "v1.0.5" # β в названии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -120,6 +120,48 @@ def get_score_weight(client_id, client_secret, player_id, score_id, osu_mode):
     except:
         print(f"\n{traceback.format_exc()}\nПовтор get_score_weight()") # Для отладки
         return get_score_weight(client_id, client_secret, player_id, score_id, osu_mode)
+
+# Функции rosu_pp_py
+def calculate_pp(mods_list, score, beatmap, beatmap_attributes):
+    recalculation = ", Расчёт pp недоступен!"
+    beatmap_path = ""
+    if mods_list is None:
+        mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
+    lazer_score = "CL" not in mods_list
+    try:
+        for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
+            beatmap.version = beatmap.version.replace(i, "")
+        beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
+    except IndexError:
+        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}")  # Позже будет отображаться в новом элементе GUI
+    except:
+        print(f"\n{traceback.format_exc()}")  # Для отладки
+    else:
+        selected_beatmap = rosu.Beatmap(path=beatmap_path)
+        if beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
+            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+        elif beatmap_attributes.type.value == osu.GameModeStr.TAIKO.value:
+            selected_beatmap.convert(mode=rosu.GameMode.Taiko, mods="".join(mods_list))
+            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+        elif beatmap_attributes.type.value == osu.GameModeStr.CATCH.value:
+            selected_beatmap.convert(mode=rosu.GameMode.Catch, mods="".join(mods_list))
+            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.large_tick_hit, n50=score.statistics.small_tick_hit, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+        elif beatmap_attributes.type.value == osu.GameModeStr.MANIA.value:
+            selected_beatmap.convert(mode=rosu.GameMode.Mania, mods="".join(mods_list))
+            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n300=score.statistics.great, n_katu=score.statistics.good, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+        if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
+            recalculation = f", FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
+        elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
+            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp")  # Для отладки
+            recalculation = f", SS: {recalculated_ss}pp"
+        else:
+            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp, SS: {recalculated_ss}pp")  # Для отладки
+            recalculation = f", SS{"+"if "SILVER" in score.rank.name else ""}!"
+    return recalculation
 
 # Функции tkinter
 def window_closed():
@@ -268,11 +310,19 @@ def open_last_score():
     main_menu.pack_forget()
     last_score.pack(fill=BOTH, expand=True)
 
-def get_osu_mode(combobox_value):
-    osu_mode = {"osu!": osu.GameModeStr.STANDARD.value,
-                "osu!taiko": osu.GameModeStr.TAIKO.value,
-                "osu!catch": osu.GameModeStr.CATCH.value,
-                "osu!mania": osu.GameModeStr.MANIA.value}[combobox_value]
+def get_osu_mode(value):
+    if type(value) == str:
+        osu_mode = {"osu!": osu.GameModeStr.STANDARD.value,
+                    "osu!taiko": osu.GameModeStr.TAIKO.value,
+                    "osu!catch": osu.GameModeStr.CATCH.value,
+                    "osu!mania": osu.GameModeStr.MANIA.value}[value]
+    elif type(value) == int:
+        osu_mode = {osu.GameModeInt.STANDARD.value: osu.GameModeStr.STANDARD.value,
+                    osu.GameModeInt.TAIKO.value: osu.GameModeStr.TAIKO.value,
+                    osu.GameModeInt.CATCH.value: osu.GameModeStr.CATCH.value,
+                    osu.GameModeInt.MANIA.value: osu.GameModeStr.MANIA.value}[value]
+    else:
+        osu_mode = None
     return osu_mode
 
 def last_score_parsing(client_id, client_secret, player_id, osu_mode):
@@ -287,7 +337,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
         previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]
         previous_score = [player.statistics.pp, None, 0]
         last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
-        last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
+        last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(player.id))))
     else:
         last_score_progressbar.config(mode="determinate")
         last_score_update_label.config(text="")
@@ -313,48 +363,14 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                         recalculation = ", Расчёт pp недоступен!"
                     # Перерасчёт pp
                     if last_score_parsing_status and bool(recalculations.get()) and osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
-                        beatmap_path = ""
-                        lazer_score = "CL" not in mods_list
-                        try:
-                            for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
-                                beatmap.version = beatmap.version.replace(i, "")
-                            beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
-                        except IndexError:
-                            print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться в новом элементе GUI
-                        except:
-                            print(f"\n{traceback.format_exc()}") # Для отладки
-                        else:
-                            selected_beatmap = rosu.Beatmap(path=beatmap_path)
-                            if osu_mode == osu.GameModeStr.STANDARD.value:
-                                recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                                recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                            elif osu_mode == osu.GameModeStr.TAIKO.value:
-                                selected_beatmap.convert(mode=rosu.GameMode.Taiko, mods="".join(mods_list))
-                                recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                                recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                            elif osu_mode == osu.GameModeStr.CATCH.value:
-                                selected_beatmap.convert(mode=rosu.GameMode.Catch, mods="".join(mods_list))
-                                recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.large_tick_hit, n50=score.statistics.small_tick_hit, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                                recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                            elif osu_mode == osu.GameModeStr.MANIA.value:
-                                selected_beatmap.convert(mode=rosu.GameMode.Mania, mods="".join(mods_list))
-                                recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n300=score.statistics.great, n_katu=score.statistics.good, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                                recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-                            if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
-                                recalculation = f", FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
-                            elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value == osu_mode != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
-                                print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp") # Для отладки
-                                recalculation = f", SS: {recalculated_ss}pp"
-                            else:
-                                print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp, SS: {recalculated_ss}pp") # Для отладки
-                                recalculation = f", {score.rank.name.replace("SILVER_SS", "SS+").replace("SILVER_S", "SS+").replace("S", "SS")}!"
+                        recalculation = calculate_pp(mods_list, score, beatmap, beatmap_attributes)
                     if last_score_parsing_status:
                         if bool(autoscaling.get()):
                             root.geometry("")
                         last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
-                        last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
+                        last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(player.id))))
                         last_score_link_label.config(text=f"https://osu.ppy.sh/scores/{score.id}")
-                        last_score_link_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/scores/{score.id}"))
+                        last_score_link_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/scores/{score.id}"), root.clipboard_clear(), root.clipboard_append(str(score.id))))
                         last_score_map_label.config(text=f"{score.beatmapset.artist} - {score.beatmapset.title} от {score.beatmapset.creator}")
                         last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}){recalculation}")
                         last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}" if score.pp is not None else ""}")
@@ -382,9 +398,15 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                     last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
                 except:
                     last_score_player_label.config(text=f"{player.username} (#???)")
-                last_score_player_label.bind("<Button-1>", lambda i: webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"))
+                last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(score.id))))
                 last_score_link_label.config(text="Последний рекорд отсутствует!")
                 last_score_link_label.unbind("<Button-1>")
+                last_score_map_label.config(text="")
+                last_score_diff_label.config(text="")
+                last_score_pp_label.config(text="")
+                last_score_mods_label.config(text="")
+                last_score_grades_label.config(text="")
+                last_score_scores_label.config(text="")
             fastmode_current = bool(fastmode.get())
             for i in range(3 if fastmode_current else 15, -1, -1):
                 if last_score_parsing_status:
@@ -502,9 +524,12 @@ def text_parsing_thread(client_id, client_secret, object_id):
                     file.write(f"\n\n\nПустые значения:\n\n{blank_values}")
         elif text_parsing_mode.get() == 1:
             score = get_score(client_id, client_secret, object_id)
+            beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
+            beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, get_osu_mode(score.ruleset_id))
+            recalculation = calculate_pp(None, score, beatmap, beatmap_attributes)
             filepath = f"{text_parsing_path}\\osu! рекорд {score.user.username} - {int(round(score.pp, 0))}pp на {score.beatmapset.title} ({object_id}).txt"
             with open(filepath, "w") as file:
-                file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация о рекорде {score.user.username} - {score.pp}pp ({int(round(score.pp, 0))}pp) на {score.beatmapset.creator} - {score.beatmapset.title} от {score.beatmapset.artist} ({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}) ({object_id}):\n")
+                file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация о рекорде {score.user.username} - {int(round(score.pp, 0))}pp ({score.pp}pp){recalculation} на {score.beatmapset.creator} - {score.beatmapset.title} от {score.beatmapset.artist} ({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}) ({object_id}):\n")
                 for i in list(filter(lambda i: "__" not in i, dir(score))):
                     if getattr(score, i) is not None:
                         if "<class 'osu.objects." in str(type(getattr(score, i))):
@@ -529,13 +554,30 @@ def text_parsing_thread(client_id, client_secret, object_id):
         if text_parsing_mode.get() == 0:
             if profile is None:
                 text_parsing_status_label.config(text="Игрок отсутствует!")
+            else:
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге профиля!")  # Для отладки
+                text_parsing_status_label.config(text="Возникла ошибка!")
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
         elif text_parsing_mode.get() == 1:
             if score is None:
                 text_parsing_status_label.config(text="Рекорд отсутствует!")
+            else:
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге рекорда!")  # Для отладки
+                text_parsing_status_label.config(text="Возникла ошибка!")
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
         else:
             print(f"\n{traceback.format_exc()}") # Для отладки
             text_parsing_status_label.config(text="Возникла ошибка!")
-            os.remove(filepath)
+            try:
+                os.remove(filepath)
+            except:
+                pass
     else:
         text_parsing_status_label.config(text="Сохранено!")
     try:
@@ -627,7 +669,7 @@ if __name__ == '__main__':
     except:
         empty_values.set(1)
     # Параметры окна
-    root.geometry(window_position[0])
+    root.geometry(window_position[0] if window_position[1] != "zoomed" else f"550x300+{window_position[0].split("+")[1]}+{window_position[0].split("+")[2]}")
     root.state(window_position[1])
     root.minsize(int(550 * ui_scale), int(300 * ui_scale))
     root.resizable(width=True, height=True)
