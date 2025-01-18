@@ -198,7 +198,7 @@ def open_additional_settings():
     (additional_window := Toplevel(root)).focus_force()
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
-    additional_window.geometry(f"{str(int(350*ui_scale))}x{str(int(200*ui_scale))}+{int(root.geometry().split("+")[1]) + 30}+{int(root.geometry().split("+")[2]) + 60}")
+    additional_window.geometry(f"{str(int(350 * ui_scale))}x{str(int(200 * ui_scale))}+{int(root.geometry().split("+")[1]) + 30}+{int(root.geometry().split("+")[2]) + 60}")
     additional_window.iconbitmap(resource_path("assets/icons/window_icon.ico"))
     additional_window.title("настройки osu!parser")
     additional_window.attributes("-topmost", True)
@@ -669,7 +669,7 @@ if __name__ == '__main__':
     except:
         empty_values.set(1)
     # Параметры окна
-    root.geometry(window_position[0] if window_position[1] != "zoomed" else f"550x300+{window_position[0].split("+")[1]}+{window_position[0].split("+")[2]}")
+    root.geometry(window_position[0] if window_position[1] != "zoomed" else f"{str(int(550 * ui_scale))}x{str(int(300 * ui_scale))}+{window_position[0].split("+")[1]}+{window_position[0].split("+")[2]}")
     root.state(window_position[1])
     root.minsize(int(550 * ui_scale), int(300 * ui_scale))
     root.resizable(width=True, height=True)
