@@ -18,7 +18,7 @@ from tkinter import messagebox, filedialog, ttk
 from tkinter import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.5" # β в названии используется для бета-версий
+program_version = "v1.0.5.1" # β в названии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -73,7 +73,7 @@ def get_profile(client_id, client_secret, player_id, osu_mode):
     except requests.exceptions.HTTPError:
         return None
     except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_profile()")  # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_profile()") # Для отладки
         return get_profile(client_id, client_secret, player_id, osu_mode)
 
 def get_beatmap(client_id, client_secret, beatmap_id):
@@ -96,7 +96,7 @@ def get_score(client_id, client_secret, score_id):
     except osu.exceptions.RequestException:
         return None
     except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_score()")  # Для отладки
+        print(f"\n{traceback.format_exc()}\nПовтор get_score()") # Для отладки
         return get_score(client_id, client_secret, score_id)
 
 def get_last_score(client_id, client_secret, player_id, osu_mode):
@@ -131,11 +131,11 @@ def calculate_pp(mods_list, score, beatmap, beatmap_attributes):
     try:
         for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
             beatmap.version = beatmap.version.replace(i, "")
-        beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*{beatmap.version}].osu", recursive=True)[0]
+        beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*[[]{beatmap.version}[]].osu", recursive=True)[0]
     except IndexError:
-        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}")  # Позже будет отображаться в новом элементе GUI
+        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться в новом элементе GUI
     except:
-        print(f"\n{traceback.format_exc()}")  # Для отладки
+        print(f"\n{traceback.format_exc()}") # Для отладки
     else:
         selected_beatmap = rosu.Beatmap(path=beatmap_path)
         if beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
@@ -156,10 +156,10 @@ def calculate_pp(mods_list, score, beatmap, beatmap_attributes):
         if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
             recalculation = f", FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
         elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
-            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp")  # Для отладки
+            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp") # Для отладки
             recalculation = f", SS: {recalculated_ss}pp"
         else:
-            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp, SS: {recalculated_ss}pp")  # Для отладки
+            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp, SS: {recalculated_ss}pp") # Для отладки
             recalculation = f", SS{"+"if "SILVER" in score.rank.name else ""}!"
     return recalculation
 
@@ -555,7 +555,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
             if profile is None:
                 text_parsing_status_label.config(text="Игрок отсутствует!")
             else:
-                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге профиля!")  # Для отладки
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге профиля!") # Для отладки
                 text_parsing_status_label.config(text="Возникла ошибка!")
                 try:
                     os.remove(filepath)
@@ -565,7 +565,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
             if score is None:
                 text_parsing_status_label.config(text="Рекорд отсутствует!")
             else:
-                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге рекорда!")  # Для отладки
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге рекорда!") # Для отладки
                 text_parsing_status_label.config(text="Возникла ошибка!")
                 try:
                     os.remove(filepath)
