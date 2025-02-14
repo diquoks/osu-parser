@@ -4,6 +4,8 @@
 
 ### Контакты
 
+[Статус разработки osu!parser](https://www.icloud.com/notes/0e0fiDVkllQ3CZ8kn6tbdpLnw)
+
 Telegram для связи:\
 https://t.me/diquoks
 
