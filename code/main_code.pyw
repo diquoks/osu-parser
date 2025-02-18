@@ -16,9 +16,10 @@ import webbrowser, traceback, threading, requests, datetime, tkinter, winreg, ct
 import rosu_pp_py as rosu
 from tkinter import messagebox, filedialog, ttk
 from tkinter import *
+from requests_functions import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.0.5.1" # β в названии используется для бета-версий
+program_version = "v1.1"  # β в нейминге версии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -26,26 +27,22 @@ registry_path_application = winreg.CreateKey(registry_path, "Application")
 registry_path_settings = winreg.CreateKey(registry_path, "Settings")
 registry_path_previous = winreg.CreateKey(registry_path, "Previous")
 try:
-    if (osu_path := winreg.QueryValueEx(registry_path_settings, "osu_path")[0]) == "":
-        osu_path = "Директория osu! не найдена!"
-except:
-    osu_path = "Директория osu! не найдена!"
-try:
     if (text_parsing_path := winreg.QueryValueEx(registry_path_settings, "text_parsing_path")[0]) == "":
         raise Exception
 except:
     try:
-        text_parsing_path = f"{glob.glob(os.getenv("USERPROFILE"), recursive=True)[0]}\\Documents\\osu!parser_exports"
+        text_parsing_path = f"{glob.glob(os.getenv("USERPROFILE"), recursive=True)[0]}\\Documents\\osu!parser"
         try:
             os.mkdir(text_parsing_path)
         except:
             pass
     except:
-        text_parsing_path = f"{glob.glob(os.getenv("HOMEDRIVE"), recursive=True)[0]}\\osu!parser_exports"
+        text_parsing_path = f"{glob.glob(os.getenv("HOMEDRIVE"), recursive=True)[0]}\\osu!parser"
         try:
             os.mkdir(text_parsing_path)
         except:
             pass
+
 
 # Функции os
 def resource_path(relative_path):
@@ -54,6 +51,7 @@ def resource_path(relative_path):
     except:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
 
 # Функции requests
 def program_version_status():
@@ -66,102 +64,6 @@ def program_version_status():
     except requests.exceptions.ConnectionError:
         print(f"\n{traceback.format_exc()}\nОтсутствует подключение к интернету!")
 
-# Функции osu.py
-def get_profile(client_id, client_secret, player_id, osu_mode):
-    try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user(user=player_id, mode=osu_mode)
-    except requests.exceptions.HTTPError:
-        return None
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_profile()") # Для отладки
-        return get_profile(client_id, client_secret, player_id, osu_mode)
-
-def get_beatmap(client_id, client_secret, beatmap_id):
-    try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_beatmap(beatmap=beatmap_id)
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_beatmap()") # Для отладки
-        return get_beatmap(client_id, client_secret, beatmap_id)
-
-def get_beatmap_attributes(client_id, client_secret, beatmap_id, osu_mode):
-    try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_beatmap_attributes(beatmap=beatmap_id, ruleset=osu_mode)
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_beatmap_attributes()") # Для отладки
-        return get_beatmap_attributes(client_id, client_secret, beatmap_id, osu_mode)
-
-def get_score(client_id, client_secret, score_id):
-    try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_score_by_id_only(score_id=score_id)
-    except osu.exceptions.RequestException:
-        return None
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_score()") # Для отладки
-        return get_score(client_id, client_secret, score_id)
-
-def get_last_score(client_id, client_secret, player_id, osu_mode):
-    try:
-        return osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user_scores(user=player_id, mode=osu_mode, type=osu.UserScoreType.RECENT, include_fails=bool(include_fails.get()), limit=1)[0]
-    except IndexError:
-        return None
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_last_score()") # Для отладки
-        return get_last_score(client_id, client_secret, player_id, osu_mode)
-
-def get_score_weight(client_id, client_secret, player_id, score_id, osu_mode):
-    try:
-        n = 0
-        for top_score in osu.Client.from_credentials(client_id=client_id, client_secret=client_secret, redirect_url=None).get_user_scores(user=player_id, mode=osu_mode, type=osu.UserScoreType.BEST, limit=100):
-            n += 1
-            if score_id == top_score.id:
-                return [top_score.weight, n]
-        else:
-            return None
-    except:
-        print(f"\n{traceback.format_exc()}\nПовтор get_score_weight()") # Для отладки
-        return get_score_weight(client_id, client_secret, player_id, score_id, osu_mode)
-
-# Функции rosu_pp_py
-def calculate_pp(mods_list, score, beatmap, beatmap_attributes):
-    recalculation = ", Расчёт pp недоступен!"
-    beatmap_path = ""
-    if mods_list is None:
-        mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
-    lazer_score = "CL" not in mods_list
-    try:
-        for i in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|"]:
-            beatmap.version = beatmap.version.replace(i, "")
-        beatmap_path = glob.glob(f"{osu_path}\\Songs\\{beatmap.beatmapset_id}*/*[[]{beatmap.version}[]].osu", recursive=True)[0]
-    except IndexError:
-        print(f"\nКарта не найдена, расчёт pp невозможен!\nДля расчёта pp загрузите карту по ссылке:\nhttps://osu.ppy.sh/beatmapsets/{beatmap.beatmapset_id}") # Позже будет отображаться в новом элементе GUI
-    except:
-        print(f"\n{traceback.format_exc()}") # Для отладки
-    else:
-        selected_beatmap = rosu.Beatmap(path=beatmap_path)
-        if beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
-            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-        elif beatmap_attributes.type.value == osu.GameModeStr.TAIKO.value:
-            selected_beatmap.convert(mode=rosu.GameMode.Taiko, mods="".join(mods_list))
-            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.ok, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-        elif beatmap_attributes.type.value == osu.GameModeStr.CATCH.value:
-            selected_beatmap.convert(mode=rosu.GameMode.Catch, mods="".join(mods_list))
-            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n100=score.statistics.large_tick_hit, n50=score.statistics.small_tick_hit, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-        elif beatmap_attributes.type.value == osu.GameModeStr.MANIA.value:
-            selected_beatmap.convert(mode=rosu.GameMode.Mania, mods="".join(mods_list))
-            recalculated_fc = round(rosu.Performance(mods="".join(mods_list), n300=score.statistics.great, n_katu=score.statistics.good, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-            recalculated_ss = round(rosu.Performance(mods="".join(mods_list), lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-        if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
-            recalculation = f", FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
-        elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
-            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp") # Для отладки
-            recalculation = f", SS: {recalculated_ss}pp"
-        else:
-            print(f"\nОжидаемый перерасчёт: FC: {recalculated_fc}pp, SS: {recalculated_ss}pp") # Для отладки
-            recalculation = f", SS{"+"if "SILVER" in score.rank.name else ""}!"
-    return recalculation
 
 # Функции tkinter
 def window_closed():
@@ -170,10 +72,12 @@ def window_closed():
     finally:
         root.destroy()
 
+
 def open_settings():
     global main_menu, settings
     main_menu.pack_forget()
     settings.pack(fill=BOTH, expand=True)
+
 
 def save_settings():
     global client_id, client_secret, settings_app_id_entry, settings_app_secret_entry
@@ -193,13 +97,14 @@ def save_settings():
             winreg.SetValueEx(registry_path_application, "client_secret", 0, winreg.REG_SZ, client_secret)
             tkinter.messagebox.showinfo(title="osu!parser", message="Настройки сохранены!")
 
+
 def open_additional_settings():
     global additional_window, additional_osu_path_label, root
     (additional_window := Toplevel(root)).focus_force()
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
     additional_window.geometry(f"{str(int(350 * ui_scale))}x{str(int(200 * ui_scale))}+{int(root.geometry().split("+")[1]) + 30}+{int(root.geometry().split("+")[2]) + 60}")
-    additional_window.iconbitmap(resource_path("assets/icons/window_icon.ico"))
+    additional_window.iconbitmap(resource_path("assets\\icons\\application\\window_icon.ico"))
     additional_window.title("настройки osu!parser")
     additional_window.attributes("-topmost", True)
     additional_window.protocol("WM_DELETE_WINDOW", close_additional_settings)
@@ -213,31 +118,33 @@ def open_additional_settings():
     (additional_recalculations_switch := ttk.Checkbutton(additional_parsing_settings_frame, text="Расчёт pp за FC и SS", variable=recalculations, command=recalculations_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_autoscaling_switch := ttk.Checkbutton(additional_program_settings_frame, text="Автомасштабирование", variable=autoscaling, command=autoscaling_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
     (additional_topmost_switch := ttk.Checkbutton(additional_program_settings_frame, text="Поверх других окон", variable=topmost, command=topmost_switched)).pack(side=TOP, anchor=NW, padx=5, pady=5)
-    (additional_osu_path_label := ttk.Label(additional_settings, text=osu_path)).pack(side=TOP, anchor=SW, padx=10)
-    if osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
-        additional_osu_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {osu_path}"))
-    (additional_osu_path_button := ttk.Button(additional_settings, text="Выбрать папку osu!", command=osu_path_select, width=20)).pack(fill=X, side=LEFT, anchor=SW, padx=10, pady=10)
-    (additional_auto_get_osu_path_button := ttk.Button(additional_settings, text="Автопоиск", command=lambda: threading.Thread(target=auto_get_osu_path, daemon=True).start(), width=5)).pack(fill=X, expand=True, side=LEFT, anchor=SW, pady=10)
+    (additional_osu_path_button := ttk.Button(additional_settings, text="Выбрать папку osu!", state=DISABLED, width=20)).pack(fill=X, side=LEFT, anchor=SW, padx=10, pady=10)
+    (additional_auto_get_osu_path_button := ttk.Button(additional_settings, text="Автопоиск", state=DISABLED, width=5)).pack(fill=X, expand=True, side=LEFT, anchor=SW, pady=10)
     (additional_close_button := ttk.Button(additional_settings, text="Закрыть", command=close_additional_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
     # Отрисовка дополнительных настроек
     additional_settings.pack(fill=BOTH, expand=True)
     additional_window.mainloop()
 
+
 def ignore_classic_switched():
     global ignore_classic
     winreg.SetValueEx(registry_path_settings, "ignore_classic", 0, winreg.REG_SZ, str(ignore_classic.get()))
+
 
 def include_fails_switched():
     global include_fails
     winreg.SetValueEx(registry_path_settings, "include_fails", 0, winreg.REG_SZ, str(include_fails.get()))
 
+
 def recalculations_switched():
     global recalculations
     winreg.SetValueEx(registry_path_settings, "recalculations", 0, winreg.REG_SZ, str(recalculations.get()))
 
+
 def autoscaling_switched():
     global autoscaling
     winreg.SetValueEx(registry_path_settings, "autoscaling", 0, winreg.REG_SZ, str(autoscaling.get()))
+
 
 def topmost_switched():
     global additional_window, topmost
@@ -245,85 +152,23 @@ def topmost_switched():
     additional_window.attributes("-topmost", True)
     winreg.SetValueEx(registry_path_settings, "topmost", 0, winreg.REG_SZ, str(topmost.get()))
 
-def osu_path_select():
-    global additional_window, additional_osu_path_label, osu_path
-    additional_window.focus()
-    if (selected_path := filedialog.askdirectory(parent=additional_window, title="Выбор директории osu!", initialdir=osu_path, mustexist=True) .replace("/", "\\")) != "":
-        osu_path = selected_path
-        winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
-    additional_osu_path_label.config(text=osu_path)
-
-def auto_get_osu_path():
-    global osu_path, additional_window, settings_credits_label, main_menu_settings_button, settings_additional_button
-    additional_window.focus()
-    drives = []
-    songs_directory = []
-    executable_directory = []
-    osu_path = "Поиск директории osu!..."
-    additional_osu_path_label.config(text=osu_path)
-    additional_osu_path_label.unbind("<Button-1>")
-    settings_credits_label.pack(expand=True, side=LEFT, padx=(0, 30))
-    main_menu_settings_button.configure(text="Настройки (!)")
-    settings_additional_button.configure(text="Дополнительно (!)", width=20)
-    for i in string.ascii_uppercase:
-        if os.path.isdir(i + ":"):
-            drives.append(i)
-    for i in drives:
-        for j in glob.glob(f"{i}:\\**\\osu!\\Songs", recursive=True):
-            if "Application Data" not in j and "Local Settings" not in j:
-                songs_directory.append(re.sub("\\\\Songs$", "", j))
-        for j in glob.glob(f"{i}:\\**\\osu!\\osu!.exe", recursive=True):
-            if "Application Data" not in j and "Local Settings" not in j:
-                executable_directory.append(re.sub("\\\\osu!.exe$", "", j))
-    for j in songs_directory:
-        for k in executable_directory:
-            if songs_directory == executable_directory:
-                osu_path = j
-                winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
-                if bool(additional_window.winfo_exists()):
-                    additional_osu_path_label.config(text=osu_path)
-                    additional_osu_path_label.bind("<Button-1>", lambda i: os.system(f"explorer.exe {osu_path}"))
-                settings_credits_label.pack(expand=True, side=LEFT, padx=0)
-                settings_additional_button.configure(text="Дополнительно", width=15)
-                break
-            else:
-                osu_path = "Директория osu! не найдена!"
-                if bool(additional_window.winfo_exists()):
-                    winreg.SetValueEx(registry_path_settings, "osu_path", 0, winreg.REG_SZ, osu_path)
-                    additional_osu_path_label.config(text=osu_path)
-                additional_osu_path_label.unbind("<Button-1>")
-    settings_credits_label.pack(expand=True, side=LEFT, padx=0)
-    main_menu_settings_button.configure(text="Настройки")
-    settings_additional_button.configure(text="Дополнительно", width=15)
 
 def close_additional_settings():
     additional_window.destroy()
     settings.focus()
+
 
 def close_settings():
     global main_menu, settings
     settings.pack_forget()
     main_menu.pack(fill=BOTH, expand=True)
 
+
 def open_last_score():
     global main_menu, last_score
     main_menu.pack_forget()
     last_score.pack(fill=BOTH, expand=True)
 
-def get_osu_mode(value):
-    if type(value) == str:
-        osu_mode = {"osu!": osu.GameModeStr.STANDARD.value,
-                    "osu!taiko": osu.GameModeStr.TAIKO.value,
-                    "osu!catch": osu.GameModeStr.CATCH.value,
-                    "osu!mania": osu.GameModeStr.MANIA.value}[value]
-    elif type(value) == int:
-        osu_mode = {osu.GameModeInt.STANDARD.value: osu.GameModeStr.STANDARD.value,
-                    osu.GameModeInt.TAIKO.value: osu.GameModeStr.TAIKO.value,
-                    osu.GameModeInt.CATCH.value: osu.GameModeStr.CATCH.value,
-                    osu.GameModeInt.MANIA.value: osu.GameModeStr.MANIA.value}[value]
-    else:
-        osu_mode = None
-    return osu_mode
 
 def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     global recalculation, last_score_parsing_status, last_score_update_label, last_score_progressbar, last_score_start_button, last_score_stop_button
@@ -334,9 +179,9 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     last_score_update_label.config(text="Обновление...")
     last_score_progressbar.config(value=30)
     if (player := get_profile(client_id, client_secret, player_id, osu_mode)) is not None:
-        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]
+        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get())]
         previous_score = [player.statistics.pp, None, 0]
-        last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+        last_score_player_label.config(text=f"{player.username}{f" (#{player.rank_history.data[-1]})" if player.rank_history is not None else ""}")
         last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(player.id))))
     else:
         last_score_progressbar.config(mode="determinate")
@@ -347,35 +192,36 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
         if last_score_parsing_status:
             last_score_update_label.config(text="Обновление...")
             last_score_progressbar.config(value=30)
-            if (score := get_last_score(client_id, client_secret, player_id, osu_mode)) is not None:
-                if previous_score[1] != score.id or previous_settings != [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]:
-                    weight = get_score_weight(client_id, client_secret, player_id, score.id, osu_mode)
+            if (score := get_last_score(client_id, client_secret, player_id, osu_mode, bool(include_fails.get()))) is not None:
+                if previous_score[1] != score.id or previous_settings != [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get())]:
+                    weight = get_score_weight(client_id, client_secret, player_id, score)
                     if last_score_parsing_status:
                         last_score_progressbar.config(value=45)
                         player = get_profile(client_id, client_secret, player_id, osu_mode)
-                        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get()), osu_path]
+                        previous_settings = [bool(ignore_classic.get()), bool(include_fails.get()), bool(recalculations.get()), bool(autoscaling.get())]
                         previous_score = [player.statistics.pp, score.id, player.statistics.pp - previous_score[0]]
                     if last_score_parsing_status:
                         last_score_progressbar.config(value=60)
-                        beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
-                        beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode)
                         mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
-                        recalculation = ", Расчёт pp недоступен!"
+                        beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
+                        beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode, score)
                     # Перерасчёт pp
-                    if last_score_parsing_status and bool(recalculations.get()) and osu_path not in ["Поиск директории osu!...", "Директория osu! не найдена!"]:
-                        recalculation = calculate_pp(mods_list, score, beatmap, beatmap_attributes)
+                    recalculation = calculate_pp(score, beatmap_attributes)
                     if last_score_parsing_status:
                         if bool(autoscaling.get()):
                             root.geometry("")
-                        last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+                        last_score_player_label.config(text=f"{player.username}{f" (#{player.rank_history.data[-1]})" if player.rank_history is not None else ""}")
                         last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(player.id))))
                         last_score_link_label.config(text=f"https://osu.ppy.sh/scores/{score.id}")
                         last_score_link_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/scores/{score.id}"), root.clipboard_clear(), root.clipboard_append(str(score.id))))
                         last_score_map_label.config(text=f"{score.beatmapset.artist} - {score.beatmapset.title} от {score.beatmapset.creator}")
-                        last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}){recalculation}")
-                        last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}" if score.pp is not None else ""}")
+                        last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}), {recalculation}")
+                        last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp" if score.pp is not None else ""}{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}")
                         last_score_mods_label.config(text=f"{mods_str if (mods_str := f"Моды: {", ".join(map(str, ((mods_list, mods_list.remove("CL") if "CL" in mods_list and bool(ignore_classic.get()) else None), mods_list if mods_list is not None else "")[1]))}") != "Моды: " else ""}".replace("None", "0"))
-                        last_score_grades_label.config(text=f"Ранк: {score.rank.name.replace("SILVER_SS", "SS+").replace("SILVER_S", "S+")}, Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
+                        last_score_grades_image = PhotoImage(file=resource_path(f"assets\\icons\\grades\\png\\GradeSmall_{score.rank.name.replace("SILVER_SS", "SS").replace("SILVER_S", "S")}{"_Silver" if "SILVER" in score.rank.name else ""}.png"))
+                        last_score_grades_picture.config(image=last_score_grades_image)
+                        last_score_grades_picture.image_ref = last_score_grades_image
+                        last_score_grades_label.config(text=f"Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
                         if osu_mode == osu.GameModeStr.STANDARD.value:
                             last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}{f", {"PASSED" if score.passed else "FAILED"}" if bool(include_fails.get()) else ""}".replace("None", "0"))
                         elif osu_mode == osu.GameModeStr.TAIKO.value:
@@ -395,7 +241,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                 player = get_profile(client_id, client_secret, player_id, osu_mode)
                 root.geometry("")
                 try:
-                    last_score_player_label.config(text=f"{player.username} (#{player.rank_history.data[-1]})")
+                    last_score_player_label.config(text=f"{player.username}{f" (#{player.rank_history.data[-1]})" if player.rank_history is not None else ""}")
                 except:
                     last_score_player_label.config(text=f"{player.username} (#???)")
                 last_score_player_label.bind("<Button-1>", lambda i: (webbrowser.open_new(f"https://osu.ppy.sh/users/{player.id}/{osu_mode}"), root.clipboard_clear(), root.clipboard_append(str(score.id))))
@@ -405,8 +251,11 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                 last_score_diff_label.config(text="")
                 last_score_pp_label.config(text="")
                 last_score_mods_label.config(text="")
+                last_score_grades_picture.config(image=None)
+                last_score_grades_picture.image_ref = None
                 last_score_grades_label.config(text="")
                 last_score_scores_label.config(text="")
+                last_score_scores_additional_label.config(text="")
             fastmode_current = bool(fastmode.get())
             for i in range(3 if fastmode_current else 15, -1, -1):
                 if last_score_parsing_status:
@@ -425,6 +274,8 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     last_score_diff_label.config(text="")
     last_score_pp_label.config(text="")
     last_score_mods_label.config(text="")
+    last_score_grades_picture.config(image=None)
+    last_score_grades_picture.image_ref = None
     last_score_grades_label.config(text="")
     last_score_scores_label.config(text="")
     last_score_scores_additional_label.config(text="")
@@ -432,6 +283,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     last_score_stop_button.config(state=DISABLED)
     last_score_stop_button.pack_forget()
     last_score_start_button.pack(side=TOP, anchor=CENTER, padx=8, pady=7)
+
 
 def last_score_parsing_start():
     global last_score_parsing_status, client_id, client_secret, last_score_parsing_thread, last_score_start_button, last_score_stop_button
@@ -451,6 +303,7 @@ def last_score_parsing_start():
             last_score_stop_button.config(state=ACTIVE)
             last_score_stop_button.pack(side=TOP, anchor=CENTER, padx=8, pady=7)
 
+
 def last_score_parsing_stop():
     global last_score_parsing_status, last_score_parsing_thread
     last_score.focus()
@@ -463,20 +316,24 @@ def last_score_parsing_stop():
     last_score_progressbar.config(mode="determinate")
     last_score_progressbar.stop()
 
+
 def fastmode_switched():
     global fastmode
     winreg.SetValueEx(registry_path_settings, "fastmode", 0, winreg.REG_SZ, str(fastmode.get()))
+
 
 def close_last_score():
     global main_menu, last_score
     last_score.pack_forget()
     main_menu.pack(fill=BOTH, expand=True)
 
+
 def open_text_parsing():
     global main_menu, main_menu_text_parsing_button, text_parsing
     main_menu.pack_forget()
     main_menu_text_parsing_button.config(text="Текстовый парсинг")
     text_parsing.pack(fill=BOTH, expand=True)
+
 
 def text_parsing_mode_selected():
     global text_parsing_osu_mode_combobox, text_parsing_mode, text_parsing_id_border, text_parsing_id_entry
@@ -490,6 +347,7 @@ def text_parsing_mode_selected():
         winreg.SetValueEx(registry_path_previous, "text_parsing_profile_id" if text_parsing_mode.get() == 1 else "text_parsing_score_id", 0, winreg.REG_SZ, str(text_parsing_id_entry.get()))
         text_parsing_id_entry.delete(0, END)
     winreg.SetValueEx(registry_path_settings, "text_parsing", 0, winreg.REG_SZ, str(text_parsing_mode.get()))
+
 
 def text_parsing_thread(client_id, client_secret, object_id):
     global text_parsing_mode, text_parsing_path, text_parsing_save_button, text_parsing_status_label, text_parsing, empty_values, main_menu_text_parsing_button
@@ -525,11 +383,11 @@ def text_parsing_thread(client_id, client_secret, object_id):
         elif text_parsing_mode.get() == 1:
             score = get_score(client_id, client_secret, object_id)
             beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
-            beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, get_osu_mode(score.ruleset_id))
-            recalculation = calculate_pp(None, score, beatmap, beatmap_attributes)
+            beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, get_osu_mode(text_parsing_osu_mode_combobox.get()), score)
+            recalculation = calculate_pp(score, beatmap_attributes)
             filepath = f"{text_parsing_path}\\osu! рекорд {score.user.username} - {int(round(score.pp, 0))}pp на {score.beatmapset.title} ({object_id}).txt"
             with open(filepath, "w") as file:
-                file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация о рекорде {score.user.username} - {int(round(score.pp, 0))}pp ({score.pp}pp){recalculation} на {score.beatmapset.creator} - {score.beatmapset.title} от {score.beatmapset.artist} ({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}) ({object_id}):\n")
+                file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация о рекорде {score.user.username} - {int(round(score.pp, 0))}pp ({score.pp}pp), {recalculation} на {score.beatmapset.creator} - {score.beatmapset.title} от {score.beatmapset.artist} ({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}) ({object_id}):\n")
                 for i in list(filter(lambda i: "__" not in i, dir(score))):
                     if getattr(score, i) is not None:
                         if "<class 'osu.objects." in str(type(getattr(score, i))):
@@ -555,7 +413,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
             if profile is None:
                 text_parsing_status_label.config(text="Игрок отсутствует!")
             else:
-                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге профиля!") # Для отладки
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге профиля!")  # Для отладки
                 text_parsing_status_label.config(text="Возникла ошибка!")
                 try:
                     os.remove(filepath)
@@ -565,14 +423,14 @@ def text_parsing_thread(client_id, client_secret, object_id):
             if score is None:
                 text_parsing_status_label.config(text="Рекорд отсутствует!")
             else:
-                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге рекорда!") # Для отладки
+                print(f"\n{traceback.format_exc()}\nВозникла ошибка при парсинге рекорда!")  # Для отладки
                 text_parsing_status_label.config(text="Возникла ошибка!")
                 try:
                     os.remove(filepath)
                 except:
                     pass
         else:
-            print(f"\n{traceback.format_exc()}") # Для отладки
+            print(f"\n{traceback.format_exc()}")  # Для отладки
             text_parsing_status_label.config(text="Возникла ошибка!")
             try:
                 os.remove(filepath)
@@ -585,6 +443,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
     except:
         main_menu_text_parsing_button.config(text="Текстовый парсинг (!)")
     text_parsing_save_button.config(state=ACTIVE)
+
 
 def text_parsing_save():
     global text_parsing, text_parsing_id_entry, client_id, client_secret
@@ -602,23 +461,27 @@ def text_parsing_save():
             text_parsing_save_button.config(state=DISABLED)
             text_parsing_status_label.config(text="Сохранение...")
 
+
 def empty_values_switched():
     global empty_values, text_parsing_id_border
     winreg.SetValueEx(registry_path_settings, "empty_values", 0, winreg.REG_SZ, str(empty_values.get()))
 
+
 def text_parsing_path_select():
     global text_parsing, root, text_parsing_path_label, text_parsing_path
     text_parsing.focus()
-    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории osu!", initialdir=text_parsing_path, mustexist=True) .replace("/", "\\")) != "":
+    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории osu!", initialdir=text_parsing_path, mustexist=True).replace("/", "\\")) != "":
         text_parsing_path = selected_path
         winreg.SetValueEx(registry_path_settings, "text_parsing_path", 0, winreg.REG_SZ, text_parsing_path)
     text_parsing_path_label.config(text=text_parsing_path)
+
 
 def close_text_parsing():
     global text_parsing_status_label, text_parsing, main_menu
     text_parsing_status_label.config(text="")
     text_parsing.pack_forget()
     main_menu.pack(fill=BOTH, expand=True)
+
 
 if __name__ == '__main__':
     # Создание окна
@@ -673,7 +536,7 @@ if __name__ == '__main__':
     root.state(window_position[1])
     root.minsize(int(550 * ui_scale), int(300 * ui_scale))
     root.resizable(width=True, height=True)
-    root.iconbitmap(resource_path("assets/icons/window_icon.ico"))
+    root.iconbitmap(resource_path("assets\\icons\\application\\window_icon.ico"))
     root.title("osu!parser")
     root.attributes("-topmost", bool(topmost.get()))
     root.protocol("WM_DELETE_WINDOW", window_closed)
@@ -681,10 +544,10 @@ if __name__ == '__main__':
     main_menu = ttk.Frame(root)
     (main_menu_title := ttk.Label(main_menu, text="osu!parser")).pack(side=TOP, anchor=CENTER, pady=2)
     (main_menu_last_score_button := ttk.Button(main_menu, text="Парсинг рекордов", command=open_last_score, width=25)).pack(side=TOP, anchor=CENTER, pady=(40, 30))
-    (main_menu_recalculation_button := ttk.Button(main_menu, text="Калькулятор pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=25)).pack(side=TOP, anchor=CENTER, pady=10)
+    (main_menu_recalculation_button := ttk.Button(main_menu, text="Калькулятор pp", state=DISABLED, width=25)).pack(side=TOP, anchor=CENTER, pady=10)
     (main_menu_text_parsing_button := ttk.Button(main_menu, text="Текстовый парсинг", command=open_text_parsing, width=25)).pack(side=TOP, anchor=CENTER, pady=10)
     (main_menu_bottom_frame := ttk.Frame(main_menu)).pack(fill=BOTH, side=BOTTOM)
-    (main_menu_language_button := ttk.Button(main_menu_bottom_frame, text="Язык / Language", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.4!\nWill be available in version 1.4!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (main_menu_language_button := ttk.Button(main_menu_bottom_frame, text="Язык / Language", state=DISABLED, width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
     (main_menu_program_version_label := ttk.Label(main_menu_bottom_frame, text=program_version, justify=CENTER)).pack(expand=True, side=LEFT)
     main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases"))
     (main_menu_settings_button := ttk.Button(main_menu_bottom_frame, text="Настройки", command=open_settings, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
@@ -728,11 +591,13 @@ if __name__ == '__main__':
     (last_score_diff_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
     (last_score_pp_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
     (last_score_mods_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
-    (last_score_grades_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_grades_frame := ttk.Frame(last_score)).pack(fill=X, side=TOP, anchor=NW, padx=10, pady=2)
+    (last_score_grades_picture := ttk.Label(last_score_grades_frame)).pack(side=LEFT, anchor=W)
+    (last_score_grades_label := ttk.Label(last_score_grades_frame)).pack(side=LEFT, anchor=W, padx=2)
     (last_score_scores_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10, pady=2)
     (last_score_scores_additional_label := ttk.Label(last_score)).pack(side=TOP, anchor=NW, padx=10)
     (last_score_bottom_frame := ttk.Frame(last_score)).pack(fill=X, side=BOTTOM)
-    (last_score_recalculate_button := ttk.Button(last_score_bottom_frame, text="Расчитать pp", command=lambda: tkinter.messagebox.showinfo(title="osu!parser", message="Будет доступно в версии 1.2!"), width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
+    (last_score_recalculate_button := ttk.Button(last_score_bottom_frame, text="Расчитать pp", state=DISABLED, width=15)).pack(side=LEFT, anchor=SW, padx=10, pady=10)
     (last_score_close_button := ttk.Button(last_score_bottom_frame, text="Назад", command=close_last_score, width=15)).pack(side=RIGHT, anchor=SE, padx=10, pady=10)
     # Текстовый парсинг
     text_parsing = ttk.Frame(root)

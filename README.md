@@ -16,7 +16,7 @@ https://t.me/diquoks_channel
 den232titovets@yandex.ru
 
 ## Руководство по использованию
-![главное меню osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/readme/main_menu.png)
+![главное меню osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/code/readme/main_menu.png)
 
 osu!parser можно использовать как для парсинга последнего рекорда любого игрока, например для того чтобы узнать сколько pp получено при игре в мульти, так и для парсинга скрытой информации из статистики профиля или рекорда, например рекомендованного старрейта в профиле.
 
@@ -28,7 +28,7 @@ osu!parser можно использовать как для парсинга п
 
 Отправка запросов в osu!parser требует данные вашего приложения OAuth для корректной работы.
 
-![настройки приложения OAuth](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/readme/application_settings.png)
+![настройки приложения OAuth](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/code/readme/application_settings.png)
 
 Для их получения [перейдите по ссылке](https://osu.ppy.sh/home/account/edit#oauth) и создайте своё приложение в разделе OAuth, а затем\
 скопируйте ID и секретный ключ приложения и вставьте их в соответствующие поля в настройках.\
@@ -38,7 +38,7 @@ osu!parser можно использовать как для парсинга п
 
 #### Дополнительные настройки
 
-![дополнительные настройки osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/readme/additional_settings.png)
+![дополнительные настройки osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/code/readme/additional_settings.png)
 
 #### Переключатели
 
@@ -71,7 +71,7 @@ The language change is not available yet, because I need to rewrite the code on 
 
 ### Парсинг рекордов
 
-![интерфейс парсинга рекордов в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/readme/last_score.png)
+![интерфейс парсинга рекордов в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/code/readme/last_score.png)
 
 Позволяет парсить последний рекорд с сайта osu!, требует ID пользователя и режим osu!
 
@@ -83,7 +83,7 @@ The language change is not available yet, because I need to rewrite the code on 
 
 ### Текстовый парсинг
 
-![интерфейс текстового парсинга в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/readme/text_parsing.png)
+![интерфейс текстового парсинга в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/assets/code/readme/text_parsing.png)
 
 Позволяет парсить все переменные профиля или рекорда,\
 требует ID рекорда или профиля, а также режим osu!\
