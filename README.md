@@ -16,11 +16,11 @@ https://t.me/diquoks_channel
 den232titovets@yandex.ru
 
 ## Руководство по использованию osu!parser
-![главное меню osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/code/assets/readme/main_menu.png)
+![главное меню osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/osu!parser/assets/readme/main_menu.png)
 
 osu!parser можно использовать как для парсинга последнего рекорда любого игрока, например для того чтобы узнать сколько pp получено при игре в мульти, так и для парсинга скрытой информации из статистики профиля или рекорда, например рекомендованного старрейта в профиле.
 
-```Руководство актуально для всех патчей osu!parser версии 1.1.```\
+```Руководство актуально для всех патчей osu!parser версии 1.1```\
 ```Следующее обновление руководства: версия 2.0```
 
 ### Начало работы и настройка osu!parser
@@ -29,7 +29,7 @@ osu!parser можно использовать как для парсинга п
 
 Отправка запросов в osu!parser требует данные вашего приложения OAuth для корректной работы.
 
-![настройки приложения OAuth](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/code/assets/readme/application_settings.png)
+![настройки приложения OAuth](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/osu!parser/assets/readme/application_settings.png)
 
 Для их получения [перейдите по ссылке](https://osu.ppy.sh/home/account/edit#oauth) и создайте своё приложение в разделе OAuth, а затем\
 скопируйте ID и секретный ключ приложения и вставьте их в соответствующие поля в настройках.\
@@ -39,7 +39,7 @@ osu!parser можно использовать как для парсинга п
 
 #### Дополнительные настройки
 
-![дополнительные настройки osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/code/assets/readme/additional_settings.png)
+![дополнительные настройки osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/osu!parser/assets/readme/additional_settings.png)
 
 #### Переключатели
 
@@ -65,7 +65,7 @@ The language change is not available yet, because I need to rewrite the code on 
 
 ### Парсинг рекордов
 
-![интерфейс парсинга рекордов в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/code/assets/readme/last_score.png)
+![интерфейс парсинга рекордов в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/osu!parser/assets/readme/last_score.png)
 
 Позволяет парсить последний рекорд с сайта osu!, требует ID пользователя и режим osu!
 
@@ -77,7 +77,7 @@ The language change is not available yet, because I need to rewrite the code on 
 
 ### Текстовый парсинг
 
-![интерфейс текстового парсинга в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/code/assets/readme/text_parsing.png)
+![интерфейс текстового парсинга в osu!parser](https://raw.githubusercontent.com/diquoks/osu-parser/refs/heads/main/osu!parser/assets/readme/text_parsing.png)
 
 Позволяет парсить все переменные профиля или рекорда,\
 требует ID рекорда или профиля, а также режим osu!\
@@ -90,7 +90,7 @@ The language change is not available yet, because I need to rewrite the code on 
 В этом разделе хотел бы оставить ники моих друзей, помогавших мне находить\
 баги и новые идеи для дальнейшей разработки osu!parser, спасибо вам <3
 
-(Ники расположены в порядке убывания важности)
+(Ники расположены в порядке убывания важности помощи)
 
-- Плейтестинг: lofasolas, LogiDASH, zaharita_plays и Noity
+- Плейтестинг: lofasolas, Noity, LogiDASH и zaharita_plays
 - Советы и идеи: LogiDASH, lofasolas и xChizhx
