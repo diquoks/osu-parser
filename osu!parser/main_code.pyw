@@ -19,7 +19,7 @@ from tkinter import *
 from requests_functions import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.1"  # β в нейминге версии используется для бета-версий
+program_version = "v1.1.1"  # β в нейминге версии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
