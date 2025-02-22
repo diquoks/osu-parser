@@ -99,7 +99,7 @@ def save_settings():
 
 
 def open_additional_settings():
-    global additional_window, additional_osu_path_label, root
+    global additional_window, root
     (additional_window := Toplevel(root)).focus_force()
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
@@ -205,8 +205,8 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                         mods_list = [getattr(score.mods[i].mod, "value") for i in range(len(score.mods))]
                         beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
                         beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, osu_mode, score)
-                    # Перерасчёт pp
-                    recalculation = calculate_pp(score, beatmap_attributes)
+                        # Перерасчёт pp
+                        recalculation = calculate_pp(score, beatmap_attributes)
                     if last_score_parsing_status:
                         if bool(autoscaling.get()):
                             root.geometry("")
@@ -221,7 +221,9 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                         last_score_grades_image = PhotoImage(file=resource_path(f"assets\\icons\\grades\\png\\GradeSmall_{score.rank.name.replace("SILVER_SS", "SS").replace("SILVER_S", "S")}{"_Silver" if "SILVER" in score.rank.name else ""}.png"))
                         last_score_grades_picture.config(image=last_score_grades_image)
                         last_score_grades_picture.image_ref = last_score_grades_image
+                        last_score_grades_picture.pack(side=LEFT, anchor=W)
                         last_score_grades_label.config(text=f"Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
+                        last_score_grades_label.pack(side=LEFT, anchor=W, padx=2)
                         if osu_mode == osu.GameModeStr.STANDARD.value:
                             last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}{f", {"PASSED" if score.passed else "FAILED"}" if bool(include_fails.get()) else ""}".replace("None", "0"))
                         elif osu_mode == osu.GameModeStr.TAIKO.value:
@@ -251,9 +253,8 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                 last_score_diff_label.config(text="")
                 last_score_pp_label.config(text="")
                 last_score_mods_label.config(text="")
-                last_score_grades_picture.config(image=None)
-                last_score_grades_picture.image_ref = None
-                last_score_grades_label.config(text="")
+                last_score_grades_picture.pack_forget()
+                last_score_grades_label.pack_forget()
                 last_score_scores_label.config(text="")
                 last_score_scores_additional_label.config(text="")
             fastmode_current = bool(fastmode.get())
@@ -274,9 +275,8 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
     last_score_diff_label.config(text="")
     last_score_pp_label.config(text="")
     last_score_mods_label.config(text="")
-    last_score_grades_picture.config(image=None)
-    last_score_grades_picture.image_ref = None
-    last_score_grades_label.config(text="")
+    last_score_grades_picture.pack_forget()
+    last_score_grades_label.pack_forget()
     last_score_scores_label.config(text="")
     last_score_scores_additional_label.config(text="")
     last_score_start_button.config(state=ACTIVE)
@@ -470,7 +470,7 @@ def empty_values_switched():
 def text_parsing_path_select():
     global text_parsing, root, text_parsing_path_label, text_parsing_path
     text_parsing.focus()
-    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории osu!", initialdir=text_parsing_path, mustexist=True).replace("/", "\\")) != "":
+    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории для файлов osu!parser", initialdir=text_parsing_path, mustexist=True).replace("/", "\\")) != "":
         text_parsing_path = selected_path
         winreg.SetValueEx(registry_path_settings, "text_parsing_path", 0, winreg.REG_SZ, text_parsing_path)
     text_parsing_path_label.config(text=text_parsing_path)
