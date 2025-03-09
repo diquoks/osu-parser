@@ -5,7 +5,7 @@ from tkinter import *
 
 
 # Функции osu.py
-def get_osu_mode(value: any) -> str | None:
+def get_osu_mode(value: str | int) -> str | None:
     """
     Возвращает значение из ``osu.GameModeStr``, принимает значение из ``ttk.Combobox`` или из ``osu.GameModeStr``.
     :param value: ``str`` или ``int``
@@ -150,7 +150,9 @@ def calculate_pp(score: osu.SoloScore, beatmap_attributes: osu.BeatmapDifficulty
     selected_beatmap = rosu.Beatmap(content=requests.get(f"https://osu.ppy.sh/osu/{score.beatmap_id}").content)
     mods_list = "".join([getattr(score.mods[i].mod, "value") for i in range(len(score.mods))])
     lazer_score = "CL" not in mods_list
-    if beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
+    if beatmap_attributes.type is None:
+        return recalculation
+    elif beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
         recalculated_fc = round(rosu.Performance(mods=mods_list, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
     elif beatmap_attributes.type.value == osu.GameModeStr.TAIKO.value:

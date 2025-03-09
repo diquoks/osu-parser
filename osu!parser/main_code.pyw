@@ -1,16 +1,3 @@
-# Ты думал тут что-то будет?
-#
-#        ▄▄   ▄▄
-#      ▀███   ██                             ▀██▄
-#        ██                                    ██
-#   ▄█▀▀███ ▀███  ▄██▀██▄▀███  ▀███   ▄██▀██▄  ██  ▄██▀ ▄██▀██▄
-# ▄██    ██   ██ ▄█▀   ██  ██    ██  ██▀   ▀██ ██ ▄█    ██   ▀▀
-# ███    ██   ██ ██    ██  ██    ██  ██     ██ ██▄██    ▀█████▄
-# ▀██    ██   ██ ██▄   ██  ██    ██  ██▄   ▄██ ██ ▀██▄  █▄   ██
-#  ▀████▀███▄████▄▀██████  ▀████▀███▄ ▀█████▀▄████▄ ██▄▄▀█████▀
-#                      ██
-#                   ▄████▄
-#
 # Импорт библиотек
 import webbrowser, traceback, threading, requests, datetime, tkinter, winreg, ctypes, string, time, glob, ast, osu, sys, re, os
 import rosu_pp_py as rosu
@@ -19,7 +6,8 @@ from tkinter import *
 from requests_functions import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.1.1"  # β в нейминге версии используется для бета-версий
+# TODO чтобы не забыть изменить номер версии перед новым релизом
+program_version = "v1.1.2"  # β в нейминге версии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -222,7 +210,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                         last_score_grades_picture.config(image=last_score_grades_image)
                         last_score_grades_picture.image_ref = last_score_grades_image
                         last_score_grades_picture.pack(side=LEFT, anchor=W)
-                        last_score_grades_label.config(text=f"Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x"}")
+                        last_score_grades_label.config(text=f"Точность: {round(score.accuracy * 100, 2)}%, Комбо: {score.max_combo}x{f"/{beatmap_attributes.max_combo}x" if beatmap_attributes.max_combo != 0 else ""}")
                         last_score_grades_label.pack(side=LEFT, anchor=W, padx=2)
                         if osu_mode == osu.GameModeStr.STANDARD.value:
                             last_score_scores_label.config(text=f"300: {score.statistics.great}/{score.maximum_statistics.great}, 100: {score.statistics.ok}, 50: {score.statistics.meh}, Miss: {score.statistics.miss}{f", {"PASSED" if score.passed else "FAILED"}" if bool(include_fails.get()) else ""}".replace("None", "0"))
