@@ -150,20 +150,20 @@ def calculate_pp(score: osu.SoloScore, beatmap_attributes: osu.BeatmapDifficulty
     selected_beatmap = rosu.Beatmap(content=requests.get(f"https://osu.ppy.sh/osu/{score.beatmap_id}").content)
     mods_list = "".join([getattr(score.mods[i].mod, "value") for i in range(len(score.mods))])
     lazer_score = "CL" not in mods_list
-    if beatmap_attributes.type is None:
+    if score.ruleset_id is None:
         return recalculation
-    elif beatmap_attributes.type.value == osu.GameModeStr.STANDARD.value:
+    elif score.ruleset_id == osu.GameModeInt.STANDARD.value:
         recalculated_fc = round(rosu.Performance(mods=mods_list, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-    elif beatmap_attributes.type.value == osu.GameModeStr.TAIKO.value:
+    elif score.ruleset_id == osu.GameModeInt.TAIKO.value:
         selected_beatmap.convert(mode=rosu.GameMode.Taiko, mods=mods_list)
         recalculated_fc = round(rosu.Performance(mods=mods_list, n100=score.statistics.ok, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-    elif beatmap_attributes.type.value == osu.GameModeStr.CATCH.value:
+    elif score.ruleset_id == osu.GameModeInt.CATCH.value:
         selected_beatmap.convert(mode=rosu.GameMode.Catch, mods=mods_list)
         recalculated_fc = round(rosu.Performance(mods=mods_list, n100=score.statistics.large_tick_hit, n50=score.statistics.small_tick_hit, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
-    elif beatmap_attributes.type.value == osu.GameModeStr.MANIA.value:
+    elif score.ruleset_id == osu.GameModeInt.MANIA.value:
         selected_beatmap.convert(mode=rosu.GameMode.Mania, mods=mods_list)
         recalculated_fc = round(rosu.Performance(mods=mods_list, n300=score.statistics.great, n_katu=score.statistics.good, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)

@@ -7,7 +7,7 @@ from requests_functions import *
 
 # Объявление переменных и работа с реестром
 # TODO чтобы не забыть изменить номер версии перед новым релизом
-program_version = "v1.1.2"  # β в нейминге версии используется для бета-версий
+program_version = "v1.1.3"  # β в нейминге версии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
