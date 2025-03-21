@@ -6,13 +6,15 @@
 
 ### Контакты
 
-[Статус разработки osu!parser](https://www.icloud.com/notes/0e0fiDVkllQ3CZ8kn6tbdpLnw)
+#### Связь с разработчиком
 
-[Telegram для связи](https://t.me/diquoks)
-
-[Telegram-канал с новостями о разработке](https://t.me/diquoks_channel)
-
+[Telegram для связи](https://t.me/diquoks)\
 [Почта для связи](mailto:den232titovets@yandex.ru)
+
+#### Прочие ссылки
+
+[Статус разработки osu!parser](https://www.icloud.com/notes/0e0fiDVkllQ3CZ8kn6tbdpLnw)\
+[Telegram-канал с новостями](https://t.me/diquoks_channel)
 
 ## Руководство по использованию osu!parser
 
