@@ -1,16 +1,16 @@
-`Крупное обновление в разработке,`\
-`последние версии могут работать нестабильно.`
+`Крупное обновление в разработке.`\
+`Последние версии могут работать нестабильно.`
 
 ## osu!parser
 
-Программа для парсинга информации с помощью osu!api v2
+Программа для парсинга рекордов и других данных с помощью osu!api v2
 
 ### Контакты
 
 #### Связь с разработчиком
 
 [Telegram для связи](https://t.me/diquoks)\
-[Почта для связи](mailto:den232titovets@yandex.ru)
+[Почта для связи](mailto:diquoks@yandex.ru)
 
 #### Прочие ссылки
 
@@ -100,4 +100,4 @@ The language change is not available yet, because I need to rewrite the code on 
 баги и новые идеи для дальнейшей разработки osu!parser, спасибо вам <3
 
 - Плейтестинг: [lofasolas](https://osu.ppy.sh/users/31543047), [Noity](https://osu.ppy.sh/users/34986222), [LogiDASH](https://osu.ppy.sh/users/10335625) и [zaharita_plays](https://osu.ppy.sh/users/33283996)
-- Советы и идеи: [LogiDASH](https://osu.ppy.sh/users/10335625), [lofasolas](https://osu.ppy.sh/users/31543047) и xChizhx
+- Советы и идеи: [LogiDASH](https://osu.ppy.sh/users/10335625), [lofasolas](https://osu.ppy.sh/users/31543047) и [xChizhx](https://github.com/xchizhx)
