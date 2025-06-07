@@ -1,3 +1,6 @@
 /.idea/
 /.venv/
-/code/legacy/
+/legacy/
+/code/future_features.py
+/tests/test_future_features.py
+*config.ini

@@ -1,0 +1,6 @@
+customtkinter
+flask
+osu.py
+requests
+rosu_pp_py
+waitress
