@@ -6,7 +6,7 @@ from tkinter import *
 from requests_functions import *
 
 # Объявление переменных и работа с реестром
-program_version = "v1.1.4"  # β в нейминге версии используется для бета-версий
+program_version = "v1.1.5"  # β в нейминге версии используется для бета-версий
 (user32 := ctypes.windll.user32).SetProcessDPIAware()
 ui_scale = user32.GetDpiForSystem() / 96
 registry_path = winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Software\\diquoks\\osu!parser")
@@ -18,13 +18,13 @@ try:
         raise Exception
 except:
     try:
-        text_parsing_path = f"{glob.glob(os.getenv("USERPROFILE"), recursive=True)[0]}\\Documents\\osu!parser"
+        text_parsing_path = f"{glob.glob(os.getenv("USERPROFILE"), recursive=True)[0]}/Documents/osu!parser"
         try:
             os.mkdir(text_parsing_path)
         except:
             pass
     except:
-        text_parsing_path = f"{glob.glob(os.getenv("HOMEDRIVE"), recursive=True)[0]}\\osu!parser"
+        text_parsing_path = f"{glob.glob(os.getenv("HOMEDRIVE"), recursive=True)[0]}/osu!parser"
         try:
             os.mkdir(text_parsing_path)
         except:
@@ -45,7 +45,7 @@ def program_version_status():
     global program_version, main_menu_program_version_label
     try:
         if "β" not in program_version and requests.get("https://github.com/diquoks/osu-parser/releases/latest").url != f"https://github.com/diquoks/osu-parser/releases/tag/{program_version}":
-            program_version = f"{program_version}\n(Доступно обновление!)"
+            program_version = f"{program_version}\n(Версия 2.0 уже доступна!)"
             main_menu_program_version_label.config(text=program_version)
             main_menu_program_version_label.bind("<Button-1>", lambda i: webbrowser.open_new("https://github.com/diquoks/osu-parser/releases/latest"))
     except requests.exceptions.ConnectionError:
@@ -91,7 +91,7 @@ def open_additional_settings():
     additional_window.grab_set()
     additional_window.resizable(width=False, height=False)
     additional_window.geometry(f"{str(int(350 * ui_scale))}x{str(int(200 * ui_scale))}+{int(root.geometry().split("+")[1]) + 30}+{int(root.geometry().split("+")[2]) + 60}")
-    additional_window.iconbitmap(resource_path("assets\\icons\\application\\window_icon.ico"))
+    additional_window.iconbitmap(resource_path("assets/icons/application/window_icon.ico"))
     additional_window.title("настройки osu!parser")
     additional_window.attributes("-topmost", True)
     additional_window.protocol("WM_DELETE_WINDOW", close_additional_settings)
@@ -205,7 +205,7 @@ def last_score_parsing(client_id, client_secret, player_id, osu_mode):
                         last_score_diff_label.config(text=f"({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}), {recalculation}")
                         last_score_pp_label.config(text=f"Всего: {round(player.statistics.pp, 2)}pp{"" if (difference_pp := round(previous_score[2], 2)) == 0.00 else f" {f"({"{:+.2f}".format(difference_pp)}pp)"}"}{f", Рекорд: {round(score.pp, 2)}pp" if score.pp is not None else ""}{f" - #{weight[1]}, Вес: {int(weight[0].percentage)}% ({round(weight[0].pp, 2)}pp)" if weight is not None else ""}")
                         last_score_mods_label.config(text=f"{mods_str if (mods_str := f"Моды: {", ".join(map(str, ((mods_list, mods_list.remove("CL") if "CL" in mods_list and bool(ignore_classic.get()) else None), mods_list if mods_list is not None else "")[1]))}") != "Моды: " else ""}".replace("None", "0"))
-                        last_score_grades_image = PhotoImage(file=resource_path(f"assets\\icons\\grades\\png\\GradeSmall_{score.rank.name.replace("SILVER_SS", "SS").replace("SILVER_S", "S")}{"_Silver" if "SILVER" in score.rank.name else ""}.png"))
+                        last_score_grades_image = PhotoImage(file=resource_path(f"assets/icons/grades/GradeSmall_{score.rank.name.replace("SILVER_SS", "SS").replace("SILVER_S", "S")}{"_Silver" if "SILVER" in score.rank.name else ""}.png"))
                         last_score_grades_picture.config(image=last_score_grades_image)
                         last_score_grades_picture.image_ref = last_score_grades_image
                         last_score_grades_picture.pack(side=LEFT, anchor=W)
@@ -344,7 +344,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
         if text_parsing_mode.get() == 0:
             profile = get_profile(client_id, client_secret, object_id, get_osu_mode(text_parsing_osu_mode_combobox.get()))
             winreg.SetValueEx(registry_path_previous, "osu_mode", 0, winreg.REG_SZ, get_osu_mode(text_parsing_osu_mode_combobox.get()))
-            filepath = f"{text_parsing_path}\\osu! профиль {profile.username} ({object_id}).txt"
+            filepath = f"{text_parsing_path}/osu! профиль {profile.username} ({object_id}).txt"
             with open(filepath, "w") as file:
                 file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация об игроке {profile.username} ({object_id}):\n")
                 for i in list(filter(lambda i: "__" not in i, dir(profile))):
@@ -372,7 +372,7 @@ def text_parsing_thread(client_id, client_secret, object_id):
             beatmap = get_beatmap(client_id, client_secret, score.beatmap_id)
             beatmap_attributes = get_beatmap_attributes(client_id, client_secret, score.beatmap_id, get_osu_mode(text_parsing_osu_mode_combobox.get()), score)
             recalculation = calculate_pp(score, beatmap_attributes)
-            filepath = f"{text_parsing_path}\\osu! рекорд {score.user.username} - {int(round(score.pp, 0))}pp на {score.beatmapset.title} ({object_id}).txt"
+            filepath = f"{text_parsing_path}/osu! рекорд {score.user.username} - {int(round(score.pp, 0))}pp на {score.beatmapset.title} ({object_id}).txt"
             with open(filepath, "w") as file:
                 file.write(f"({datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")})\nИнформация о рекорде {score.user.username} - {int(round(score.pp, 0))}pp ({score.pp}pp), {recalculation} на {score.beatmapset.creator} - {score.beatmapset.title} от {score.beatmapset.artist} ({score.beatmap.version}, {score.beatmap.difficulty_rating}*, {score.beatmap.ranked.name}) ({object_id}):\n")
                 for i in list(filter(lambda i: "__" not in i, dir(score))):
@@ -457,7 +457,7 @@ def empty_values_switched():
 def text_parsing_path_select():
     global text_parsing, root, text_parsing_path_label, text_parsing_path
     text_parsing.focus()
-    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории для файлов osu!parser", initialdir=text_parsing_path, mustexist=True).replace("/", "\\")) != "":
+    if (selected_path := filedialog.askdirectory(parent=root, title="Выбор директории для файлов osu!parser", initialdir=text_parsing_path, mustexist=True)) != "":
         text_parsing_path = selected_path
         winreg.SetValueEx(registry_path_settings, "text_parsing_path", 0, winreg.REG_SZ, text_parsing_path)
     text_parsing_path_label.config(text=text_parsing_path)
@@ -523,7 +523,7 @@ if __name__ == '__main__':
     root.state(window_position[1])
     root.minsize(int(550 * ui_scale), int(300 * ui_scale))
     root.resizable(width=True, height=True)
-    root.iconbitmap(resource_path("assets\\icons\\application\\window_icon.ico"))
+    root.iconbitmap(resource_path("assets/icons/application/window_icon.ico"))
     root.title("osu!parser")
     root.attributes("-topmost", bool(topmost.get()))
     root.protocol("WM_DELETE_WINDOW", window_closed)

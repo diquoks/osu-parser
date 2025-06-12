@@ -150,9 +150,7 @@ def calculate_pp(score: osu.SoloScore, beatmap_attributes: osu.BeatmapDifficulty
     selected_beatmap = rosu.Beatmap(content=requests.get(f"https://osu.ppy.sh/osu/{score.beatmap_id}").content)
     mods_list = "".join([getattr(score.mods[i].mod, "value") for i in range(len(score.mods))])
     lazer_score = "CL" not in mods_list
-    if score.ruleset_id is None:
-        return recalculation
-    elif score.ruleset_id == osu.GameModeInt.STANDARD.value:
+    if score.ruleset_id == osu.GameModeInt.STANDARD.value:
         recalculated_fc = round(rosu.Performance(mods=mods_list, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
     elif score.ruleset_id == osu.GameModeInt.TAIKO.value:
@@ -167,6 +165,8 @@ def calculate_pp(score: osu.SoloScore, beatmap_attributes: osu.BeatmapDifficulty
         selected_beatmap.convert(mode=rosu.GameMode.Mania, mods=mods_list)
         recalculated_fc = round(rosu.Performance(mods=mods_list, n300=score.statistics.great, n_katu=score.statistics.good, n100=score.statistics.ok, n50=score.statistics.meh, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
         recalculated_ss = round(rosu.Performance(mods=mods_list, lazer=lazer_score).calculate(selected_beatmap).pp, 2)
+    else:
+        return recalculation
     if score.max_combo < beatmap_attributes.max_combo and recalculated_fc != recalculated_ss:
         recalculation = f"FC: {recalculated_fc}pp, SS: {recalculated_ss}pp"
     elif (score.statistics.great != score.maximum_statistics.great) if beatmap_attributes.type.value != osu.GameModeStr.MANIA.value else (score.statistics.perfect != score.maximum_statistics.perfect):
