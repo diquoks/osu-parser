@@ -1,0 +1,1 @@
+pyinstaller --noconfirm --onefile --windowed --icon "C:\Users\diquoks\PycharmProjects\osu-parser\code\assets\icons\application.ico" --name "osu!parser" --add-data "C:\Users\diquoks\PycharmProjects\osu-parser\code;."  "C:\Users\diquoks\PycharmProjects\osu-parser\code\main.pyw"

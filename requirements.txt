@@ -1,3 +1,9 @@
+auto-py-to-exe
 customtkinter
-osu.py
+flask
+Pillow
+pyinstaller
+requests
 rosu_pp_py
+spectra
+waitress
