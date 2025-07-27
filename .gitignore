@@ -1,7 +1,6 @@
 /.idea/
 /.venv/
 /build/
-!/build/auto-py-to-exe.json
 !/build/pyinstaller.ps1
 *config.ini
 *future_features*
