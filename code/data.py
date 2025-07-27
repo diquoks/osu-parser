@@ -50,12 +50,14 @@ class ApplicationConfig:
         :var client_secret: ``str``
         :var redirect_uri: ``str``
         :var scopes: ``str``
+        :var server: ``str``
         """
         _NAME = "OAuth"
         client_id: int | str | None
         client_secret: str | None
         redirect_uri: str | None
         scopes: str | None
+        server: str | None
 
         def __init__(self, parent: ApplicationConfig) -> None:
             super().__init__(parent=parent)
@@ -87,6 +89,7 @@ class ApplicationConfig:
                 "client_secret",
                 "redirect_uri",
                 "scopes",
+                "server",
             },
         "Settings":
             {

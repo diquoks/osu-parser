@@ -214,6 +214,7 @@ class Score(SampleModel):
         "rank",
         "rank_global",
         "ruleset_id",
+        "is_perfect_combo",
     }
     _OBJECTS = {
         "beatmap": Beatmap,
@@ -238,4 +239,5 @@ class Score(SampleModel):
     rank_global: int | None
     ruleset_id: int | None
     statistics: ScoreStatistics | None
+    is_perfect_combo: bool | None
     weight: ScoreWeight | None
