@@ -11,11 +11,11 @@ def check_for_updates(version: str, beta: bool = False) -> bool | None:
 
 
 class OAuthApplication:
-    _ENDPOINT_URL = "https://{0}.ppy.sh"
+    _ENDPOINT_URL = "https://{0}"
     _FAILURE_KEYS = {"error", "authentication"}
     _DEBUG_STRING = "{0}: {1}"
 
-    def __init__(self, client_id: int, client_secret: str, redirect_uri: str, scopes: str, server: str = "osu") -> None:
+    def __init__(self, client_id: int, client_secret: str, redirect_uri: str, scopes: str, server: str = "osu.ppy.sh") -> None:
         self._ENDPOINT_URL = self._ENDPOINT_URL.format(server)
         self._BASE_URL = f"{self._ENDPOINT_URL}/api/v2"
         self._OAUTH_URL = f"{self._ENDPOINT_URL}/oauth"

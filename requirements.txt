@@ -1,4 +1,3 @@
-auto-py-to-exe
 customtkinter
 flask
 Pillow
