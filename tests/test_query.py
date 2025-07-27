@@ -7,10 +7,10 @@ import models, query, data
 SKIP_REVOKE = True
 
 USER = 31760756
-RULESET = models.Rulesets.MANIA
-BEATMAP = 4483898
-BEATMAPSET = 2126021
-SCORE = 5189514128
+RULESET = models.Rulesets.OSU
+BEATMAP = 2419372
+BEATMAPSET = 1159452
+SCORE = 5214870827
 
 
 class TestQuery(test_utils.SampleTest):

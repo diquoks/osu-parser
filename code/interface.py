@@ -30,7 +30,6 @@ class Application(ctk.CTk):
                 self.parsing_score_difficulty = "{0}, {1}, {2}*"
                 self.parsing_score_pp_fc = "FC: {0}pp"
                 self.parsing_score_pp_ss = "SS: {0}pp"
-                self.parsing_score_pp_unavailable = "Перерасчёт pp недоступен!"
                 self.parsing_score_pp_total = "Всего: {0}pp"
                 self.parsing_score_pp_diff = "(+{0}pp)"
                 self.parsing_score_pp_score = "Рекорд: {0}pp"
@@ -123,9 +122,9 @@ class Application(ctk.CTk):
                 "d",
                 "f",
                 "s",
-                "silver_s",
-                "silver_ss",
-                "ss",
+                "sh",
+                "x",
+                "xh",
             }
             a: PIL.Image.Image
             b: PIL.Image.Image
@@ -133,9 +132,9 @@ class Application(ctk.CTk):
             d: PIL.Image.Image
             f: PIL.Image.Image
             s: PIL.Image.Image
-            silver_s: PIL.Image.Image
-            silver_ss: PIL.Image.Image
-            ss: PIL.Image.Image
+            sh: PIL.Image.Image
+            x: PIL.Image.Image
+            xh: PIL.Image.Image
 
         class Images(Directory):
             _PATH = various.get_path("assets/images/{0}.png")
@@ -349,7 +348,7 @@ class Application(ctk.CTk):
                 self.parsing_settings_progressbar.set(value=current_value + ratio)
                 time.sleep(ratio / 2)
         self.parsing_settings_progressbar.set(value=value)
-        logging.debug(self._strings.text._debug.format(sys._getframe().f_code.co_name, self.parsing_settings_progressbar.get()))
+        logging.debug(self._strings.text._debug.format(sys._getframe().f_code.co_name, value))
 
     def _settings_options_window_theme_combobox_select(self, value: str) -> None:
         ctk.set_appearance_mode(self._colors.available_appearance_modes[self._strings.text.settings_options_window_themes_list.index(value)])
@@ -453,10 +452,10 @@ class Application(ctk.CTk):
                                     self._strings.text.parsing_score_difficulty.format(beatmap.version, beatmap.status.capitalize(), self._round_float_values(beatmap_attributes.star_rating, adaptive=False)),
                                     self._strings.text._sep_comma.join(
                                         [i for i in [
-                                            self._strings.text.parsing_score_pp_fc.format(self._round_float_values(pp_recalculation.fc.pp)) if score.max_combo != beatmap_attributes.max_combo else None,
+                                            self._strings.text.parsing_score_pp_fc.format(self._round_float_values(pp_recalculation.fc.pp)) if not score.is_perfect_combo else None,
                                             self._strings.text.parsing_score_pp_ss.format(self._round_float_values(pp_recalculation.ss.pp))
                                         ] if i]
-                                    ) if "SS" not in score.rank else self._strings.text.parsing_score_pp_unavailable,
+                                    ) if "x" not in score.rank.lower() else None,
                                 ] if i]
                             )
                         )
@@ -475,8 +474,9 @@ class Application(ctk.CTk):
                                 ] if i]
                             )
                         )
+                        print(score.pp)
                         self.parsing_score_mods_label.configure(text=self._strings.text.parsing_score_mods.format(self._strings.text._sep_comma.join(score.mods)) if score.mods else str())
-                        self.parsing_score_data_grade_label.configure(image=ctk.CTkImage(dark_image=getattr(self._assets.grades, score.rank.lower()), size=(32, 16)))
+                        self.parsing_score_data_grade_label.configure(image=ctk.CTkImage(dark_image=getattr(self._assets.grades, score.rank.lower()) if score.passed else self._assets.grades.f, size=(32, 16)))
                         self.parsing_score_data_stats_label.configure(text=self._strings.text.parsing_score_data_stats.format(self._round_float_values(score.accuracy * 100, adaptive=False), score.max_combo))
                         self.parsing_score_hits_label.configure(text=self._strings.text.parsing_score_hits_list[ruleset_index].format(*parsing_score_hits_values[ruleset_index]).replace(str(None), str(int())))
                         self.parsing_score_supp_hits_label.configure(text=self._strings.text.parsing_score_supp_hits_list[ruleset_index].format(*parsing_score_supp_hits_values[ruleset_index]).replace(str(None), str(int())))
