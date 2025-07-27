@@ -474,6 +474,7 @@ class Application(ctk.CTk):
                                 ] if i]
                             )
                         )
+                        print(score.pp)
                         self.parsing_score_mods_label.configure(text=self._strings.text.parsing_score_mods.format(self._strings.text._sep_comma.join(score.mods)) if score.mods else str())
                         self.parsing_score_data_grade_label.configure(image=ctk.CTkImage(dark_image=getattr(self._assets.grades, score.rank.lower()) if score.passed else self._assets.grades.f, size=(32, 16)))
                         self.parsing_score_data_stats_label.configure(text=self._strings.text.parsing_score_data_stats.format(self._round_float_values(score.accuracy * 100, adaptive=False), score.max_combo))
