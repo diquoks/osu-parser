@@ -106,12 +106,19 @@ class Application(ctk.CTk):
 
     class Assets:
         class Directory:
-            _PATH = None
-            _NAMES = None
+            _PATH: str = None
+            _NAMES: set[str] = None
 
             def __init__(self, parent: Assets):
                 for i in self._NAMES:
-                    setattr(self, i, parent.file_image(self._PATH.format(i)))
+                    setattr(self, i, parent.file_image(path=self._PATH.format(i)))
+
+        class Network:
+            _NAMES: dict[str, str] = None
+
+            def __init__(self, parent: Assets):
+                for k, v in self._NAMES.items():
+                    setattr(self, k, parent.network_image(url=v))
 
         class Grades(Directory):
             _PATH = various.get_path("assets/grades/{0}.png")
@@ -136,10 +143,9 @@ class Application(ctk.CTk):
             x: PIL.Image.Image
             xh: PIL.Image.Image
 
-        class Images(Directory):
-            _PATH = various.get_path("assets/images/{0}.png")
+        class Images(Network):
             _NAMES = {
-                "default_avatar",
+                "default_avatar": "https://osu.ppy.sh/images/layout/avatar-guest.png",
             }
             default_avatar: PIL.Image.Image
 
