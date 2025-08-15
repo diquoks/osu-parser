@@ -1,26 +1,6 @@
 from __future__ import annotations
 import configparser, winreg
-import various
-
-
-class ParsingValues:
-    """
-    :var pp_total: ``float``
-    :var pp_diff: ``float``
-    :var score_id: ``int`` | ``None``
-    :var score_id: ``dict``
-    """
-    pp_total: float
-    pp_diff: float
-    score_id: int | None
-    settings: ApplicationRegistry.SampleRegistry
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-    def update(self, **kwargs):
-        self.__init__(**kwargs)
+import utils
 
 
 class ApplicationConfig:
@@ -29,22 +9,22 @@ class ApplicationConfig:
     :var settings: ``SettingsConfig``
     """
 
-    class SampleConfig:
-        _NAME: str
+    class IConfig:
+        _SECTION: str = None
 
         def __init__(self, parent: ApplicationConfig) -> None:
             self._config = configparser.ConfigParser()
-            self._config.read(various.get_path("config.ini"))
-            if not self._config.has_section(self._NAME):
-                self._config.add_section(self._NAME)
-            for i in parent._CONFIG_VALUES[self._NAME]:
+            self._config.read(utils.get_path(relative_path="config.ini"))
+            if not self._config.has_section(self._SECTION):
+                self._config.add_section(self._SECTION)
+            for i in parent._CONFIG_VALUES[self._SECTION]:
                 try:
-                    setattr(self, i, self._config.get(self._NAME, i))
+                    setattr(self, i, self._config.get(self._SECTION, i))
                 except:
-                    self._config.set(self._NAME, i, i)
-                    self._config.write(open(various.get_path("config.ini"), "w"))
+                    self._config.set(self._SECTION, i, i)
+                    self._config.write(open(utils.get_path(relative_path="config.ini"), "w"))
 
-    class OAuthConfig(SampleConfig):
+    class OAuthConfig(IConfig):
         """
         :var client_id: ``int``
         :var client_secret: ``str``
@@ -52,7 +32,8 @@ class ApplicationConfig:
         :var scopes: ``str``
         :var server: ``str``
         """
-        _NAME = "OAuth"
+
+        _SECTION = "OAuth"
         client_id: int | str | None
         client_secret: str | None
         redirect_uri: str | None
@@ -64,21 +45,22 @@ class ApplicationConfig:
             try:
                 self.client_id = int(self.client_id)
             except:
-                raise configparser.ParsingError("_config.ini is filled incorrectly!")
+                raise configparser.ParsingError("config.ini is filled incorrectly!")
 
-    class SettingsConfig(SampleConfig):
+    class SettingsConfig(IConfig):
         """
         :var beta: ``bool``
         :var version: ``str``
         """
-        _NAME = "Settings"
+
+        _SECTION = "Settings"
         beta: bool | str | None
         version: str | None
 
         def __init__(self, parent: ApplicationConfig) -> None:
             super().__init__(parent=parent)
             if self.beta not in [str(True), str(False)]:
-                raise configparser.ParsingError("_config.ini is filled incorrectly!")
+                raise configparser.ParsingError("config.ini is filled incorrectly!")
             else:
                 self.beta = self.beta == str(True)
 
@@ -112,9 +94,9 @@ class ApplicationRegistry:
     :var window: ``WindowRegistry``
     """
 
-    class SampleRegistry:
-        _NAME: str
-        _REGISTRY_VALUES: dict
+    class IRegistry:
+        _NAME: str = None
+        _REGISTRY_VALUES: dict = None
 
         def __init__(self, parent: ApplicationRegistry = None) -> None:
             if isinstance(parent, ApplicationRegistry):
@@ -127,7 +109,7 @@ class ApplicationRegistry:
                     setattr(self, i, None)
             super().__init__()
 
-        def refresh(self) -> data.ApplicationRegistry.SampleRegistry:
+        def refresh(self) -> data.ApplicationRegistry.IRegistry:
             self.__init__()
             return self
 
@@ -139,13 +121,14 @@ class ApplicationRegistry:
         def values(self) -> dict:
             return {i: getattr(self, i) for i in self._REGISTRY_VALUES}
 
-    class OAuthRegistry(SampleRegistry):
+    class OAuthRegistry(IRegistry):
         """
         :var access_token: ``str``
         :var expires_in: ``int``
         :var refresh_token: ``str``
         :var token_type: ``str``
         """
+
         _NAME = "OAuth"
         _REGISTRY_VALUES: dict
         _path: winreg.HKEYType
@@ -154,39 +137,42 @@ class ApplicationRegistry:
         refresh_token: str | None
         token_type: str | None
 
-    class PreviousRegistry(SampleRegistry):
+    class PreviousRegistry(IRegistry):
         """
-        :var user: ``int``
         :var ruleset: ``str``
         :var score: ``str``
+        :var user: ``int``
         """
+
         _NAME = "Previous"
         _REGISTRY_VALUES: dict
         _path: winreg.HKEYType
-        user: int | None
         ruleset: str | None
         score: str | None
+        user: int | None
 
-    class SettingsRegistry(SampleRegistry):
+    class SettingsRegistry(IRegistry):
         """
         :var float_values: ``bool``
         :var include_fails: ``bool``
         :var lazer_mode: ``bool``
         """
+
         _NAME = "Settings"
         _REGISTRY_VALUES: dict
         _path: winreg.HKEYType
         float_values: bool | None
-        lazer_mode: bool | None
         include_fails: bool | None
+        lazer_mode: bool | None
 
-    class WindowRegistry(SampleRegistry):
+    class WindowRegistry(IRegistry):
         """
         :var dimensions: ``str``
         :var state: ``str``
         :var theme: ``str``
         :var topmost: ``bool``
         """
+
         _NAME = "Window"
         _REGISTRY_VALUES: dict
         _path: winreg.HKEYType
@@ -203,9 +189,9 @@ class ApplicationRegistry:
             "token_type": winreg.REG_SZ,
         },
         "Previous": {
-            "user": winreg.REG_DWORD,
             "ruleset": winreg.REG_SZ,
             "score": winreg.REG_SZ,
+            "user": winreg.REG_DWORD,
         },
         "Settings": {
             "float_values": winreg.REG_DWORD,

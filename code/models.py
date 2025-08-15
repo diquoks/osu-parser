@@ -2,14 +2,11 @@ from __future__ import annotations
 import rosu_pp_py
 
 
-def convert_mods(data: list[dict]) -> list | None:
-    return None if len(data) == int() else [i["acronym"] for i in data]
-
-
 class Rulesets:
     """
     https://osu.ppy.sh/docs/#ruleset
     """
+
     OSU = "osu"
     TAIKO = "taiko"
     CATCH = "fruits"
@@ -40,18 +37,9 @@ class Rulesets:
     }
 
 
-class RawBeatmapContainer:
-    id: int
-    bytes: bytes
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-
-class SampleModel:
-    _ATTRIBUTES = None
-    _OBJECTS = None
+class IModel:
+    _ATTRIBUTES: dict | set | None = None
+    _OBJECTS: dict | None = None
     data: dict
 
     def __init__(self, data: dict):
@@ -71,17 +59,27 @@ class SampleModel:
                         except:
                             setattr(self, k, None)
         if isinstance(self._OBJECTS, dict):
-            for i in self._OBJECTS.keys():
+            for i, j in self._OBJECTS.items():
                 try:
-                    setattr(self, i, self._OBJECTS[i](data=data[i]))
+                    setattr(self, i, j(data=data[i]))
                 except:
                     setattr(self, i, None)
 
 
-class UserStatistics(SampleModel):
+class RawBeatmapContainer:
+    id: int
+    bytes: bytes
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+class UserStatistics(IModel):
     """
     https://osu.ppy.sh/docs/#userstatistics
     """
+
     _ATTRIBUTES = {
         "global_rank",
         "pp",
@@ -91,10 +89,11 @@ class UserStatistics(SampleModel):
     pp: int | None
 
 
-class User(SampleModel):
+class User(IModel):
     """
     https://osu.ppy.sh/docs/#userextended
     """
+
     _ATTRIBUTES = {
         "avatar_url",
         "id",
@@ -112,10 +111,11 @@ class User(SampleModel):
     username: str | None
 
 
-class BeatmapAttributes(SampleModel):
+class BeatmapAttributes(IModel):
     """
     https://osu.ppy.sh/docs/#beatmapdifficultyattributes
     """
+
     _ATTRIBUTES = {
         "attributes": {
             "star_rating",
@@ -127,24 +127,31 @@ class BeatmapAttributes(SampleModel):
     max_combo: int | None
 
 
-class Beatmap(SampleModel):
+class Beatmap(IModel):
     """
     https://osu.ppy.sh/docs/#beatmapextended
     """
+
     _ATTRIBUTES = {
         "beatmapset_id",
+        "difficulty_rating",
         "id",
         "status",
         "version",
     }
     data: dict
     beatmapset_id: int | None
+    difficulty_rating: float | None
     id: int | None
     status: str | None
     version: str | None
 
 
-class Beatmapset(SampleModel):
+class Beatmapset(IModel):
+    """
+    https://osu.ppy.sh/docs/#beatmapset
+    """
+
     _ATTRIBUTES = {
         "artist",
         "creator",
@@ -158,7 +165,7 @@ class Beatmapset(SampleModel):
     title: str | None
 
 
-class ScoreWeight(SampleModel):
+class ScoreWeight(IModel):
     _ATTRIBUTES = {
         "percentage",
         "pp",
@@ -168,7 +175,29 @@ class ScoreWeight(SampleModel):
     pp: float | None
 
 
-class ScoreStatistics(SampleModel):
+class Mod(IModel):
+    _ATTRIBUTES = {
+        "acronym",
+        "settings",
+    }
+    data: dict
+    acronym: str | None
+    settings: dict | None
+
+
+class ModsContainer:
+    data: list[dict]
+    mods: list[Mod] | None
+
+    def __init__(self, data: dict):
+        setattr(self, "data", data)
+        setattr(self, "mods", [Mod(data=i) for i in data])
+
+    def stringify_mods(self) -> list | None:
+        return None if len(self.data) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
+
+
+class ScoreStatistics(IModel):
     _ATTRIBUTES = {
         "good",
         "great",
@@ -200,10 +229,11 @@ class ScoreStatistics(SampleModel):
     small_tick_hit: int | None
 
 
-class Score(SampleModel):
+class Score(IModel):
     """
     https://osu.ppy.sh/docs/#score
     """
+
     _ATTRIBUTES = {
         "accuracy",
         "has_replay",
@@ -220,7 +250,7 @@ class Score(SampleModel):
         "beatmap": Beatmap,
         "beatmapset": Beatmapset,
         "maximum_statistics": ScoreStatistics,
-        "mods": convert_mods,
+        "mods": ModsContainer,
         "statistics": ScoreStatistics,
         "weight": ScoreWeight
     }
@@ -232,7 +262,7 @@ class Score(SampleModel):
     id: int | None
     max_combo: int | None
     maximum_statistics: ScoreStatistics | None
-    mods: list | None
+    mods: ModsContainer | None
     passed: bool | None
     pp: float | None
     rank: str | None
@@ -240,4 +270,4 @@ class Score(SampleModel):
     ruleset_id: int | None
     statistics: ScoreStatistics | None
     is_perfect_combo: bool | None
-    weight: ScoreWeight | None
+    weight: Sc

@@ -1,24 +1,27 @@
-import threading, datetime, unittest, logging, sys
-import test_utils
+from __future__ import annotations
+import sys
 
 sys.path.append('../code')
-import query, data, localhost
+import threading, unittest
+import test_utils, localhost
 
 SKIP_DEPLOYMENT = True
 
 
-class TestLocalhost(test_utils.SampleTest):
+class TestLocalhost(test_utils.ITest):
     _REFRESH_TOKEN = False
 
     def test_localhost_serve(self) -> None:
-        test_data = f"Deploying localhost...\nlocalhost_thread.daemon = {SKIP_DEPLOYMENT}"
-        print(f"{sys._getframe().f_code.co_name}:\n{test_data}\n")
+        print(self._strings.debug.test_data.format(
+            sys._getframe().f_code.co_name,
+            self._strings.log.test_localhost_deploy.format(SKIP_DEPLOYMENT)
+        ))
         localhost_thread = threading.Thread(target=localhost.localhost_serve, daemon=SKIP_DEPLOYMENT, name="localhostThread")
         try:
             self._oauth._query_helper()
         except:
             localhost_thread.daemon = False
-            print(f"Failed to refresh access token\nlocalhost_thread.daemon = {localhost_thread.daemon}")
+            print(self._strings.log.test_localhost_deploy.format(localhost_thread.daemon))
         finally:
             localhost_thread.start()
 
