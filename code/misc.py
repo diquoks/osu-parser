@@ -1,5 +1,5 @@
 from __future__ import annotations
-import customtkinter as ctk, requests, PIL, io
+import customtkinter as ctk, requests, PIL.Image, PIL.ImageDraw, io
 import data, utils
 
 
@@ -27,7 +27,7 @@ class ParsingValues:
 class Strings:
     class Debug:
         function_data = "{0}:{1}"
-        test_data = "{0}:\n{1}"
+        test_data = "\n{0}:\nData: {1}\nExpected: {2}"
         attribute_data = "{0}: {1}"
 
     class LocalisableText:
@@ -166,11 +166,26 @@ class Assets:
 
     @staticmethod
     def file_image(path: str) -> PIL.Image.Image:
-        return PIL.Image.open(fp=path)
+        return PIL.Image.open(fp=io.BytesIO(initial_bytes=open(path, "rb").read()))
 
     @staticmethod
     def network_image(url: str) -> PIL.Image.Image:
         return PIL.Image.open(fp=io.BytesIO(initial_bytes=requests.get(url=url).content))
+
+    @staticmethod
+    def round_corners(image: PIL.Image.Image, radius: int) -> PIL.Image.Image:
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        width, height = image.size
+        shape = PIL.Image.new('L', (radius * 2, radius * 2), 0)
+        alpha = PIL.Image.new('L', image.size, "white")
+        PIL.ImageDraw.Draw(shape).ellipse((0, 0, radius * 2, radius * 2), fill=255)
+        alpha.paste(shape.crop((0, 0, radius, radius)), (0, 0))
+        alpha.paste(shape.crop((0, radius, radius, radius * 2)), (0, height - radius))
+        alpha.paste(shape.crop((radius, 0, radius * 2, radius)), (width - radius, 0))
+        alpha.paste(shape.crop((radius, radius, radius * 2, radius * 2)), (width - radius, height - radius))
+        image.putalpha(alpha)
+        return image
 
 
 class Colors:
@@ -184,7 +199,6 @@ class Colors:
         self.combobox_text_color = ctk.ThemeManager.theme["CTkComboBox"]["text_color"]
         self.progressbar_progress_color = ctk.ThemeManager.theme["CTkProgressBar"]["progress_color"]
         self.progressbar_fg_color = ctk.ThemeManager.theme["CTkProgressBar"]["fg_color"]
-        self.frame_fg_color_background_corner_colors: tuple[str] = tuple(self.frame_fg_color for _ in range(4))
         self.available_appearance_modes = ["system", "light", "dark"]
 
 

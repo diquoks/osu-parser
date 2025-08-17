@@ -11,7 +11,7 @@ class ITest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls._strings = various.Strings()
+        cls._strings = misc.Strings()
         cls._config = data.ApplicationConfig()
         cls._registry = data.ApplicationRegistry()
         cls._oauth = query.OAuthApplication.from_config(cls._config.oauth)
@@ -22,8 +22,8 @@ class ITest(unittest.TestCase):
             except:
                 raise unittest.SkipTest(cls._strings.log.error_refresh_token)
 
-    def assert_type(self, test_data: object, test_type: type | types.UnionType) -> None:
-        print(test_data)
+    def assert_type(self, func_name: str, test_data: object, test_type: type | types.UnionType) -> None:
+        print(self._strings.debug.test_data.format(func_name, test_data, test_type))
         if isinstance(test_data, models.IModel):
             print(self._strings.separator.newline.join(self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())))
         self.assertIsInstance(test_data, test_type)
