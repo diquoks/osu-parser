@@ -112,11 +112,11 @@ class Application(ctk.CTk):
         self.settings_bottom_creator_label.bind(sequence="<ButtonPress-1>", command=lambda i: webbrowser.open(self._strings.url.diquoks_web))
         self.settings_bottom_creator_label.pack(anchor=ctk.E, side=ctk.RIGHT)
         self.settings_bottom_version_label = ctk.CTkLabel(master=self.settings_bottom_frame, text=self._strings.localisable_text.settings_bottom_version_beta.format(self._config.settings.version) if self._config.settings.beta else self._config.settings.version, font=self._fonts.underlined, cursor="hand2", anchor=ctk.E, height=int())
-        self.settings_bottom_version_label.bind(sequence="<ButtonPress-1>", command=lambda i: webbrowser.open(self._strings.url.releases_latest))
+        self.settings_bottom_version_label.bind(sequence="<ButtonPress-1>", command=lambda i: webbrowser.open(self._strings.url.latest_release))
         self.settings_bottom_version_label.pack(expand=True, anchor=ctk.CENTER, side=ctk.LEFT)
-        self.settings_options_frame = ctk.CTkFrame(master=self.main_settings_tab, fg_color=self._colors.transparent)
+        self.settings_options_frame = ctk.CTkFrame(master=self.main_settings_tab, fg_color=self._colors.fg_color)
         self.settings_options_frame.pack(fill=ctk.BOTH, anchor=ctk.N, side=ctk.TOP)
-        self.settings_options_window_frame = ctk.CTkFrame(master=self.settings_options_frame, fg_color=self._colors.fg_color, background_corner_colors=self._colors.frame_fg_color_background_corner_colors)
+        self.settings_options_window_frame = ctk.CTkFrame(master=self.settings_options_frame, fg_color=self._colors.transparent, background_corner_colors=tuple([self._colors.frame_fg_color, self._colors.fg_color, self._colors.fg_color, self._colors.frame_fg_color]))
         self.settings_options_window_frame.pack(fill=ctk.BOTH, anchor=ctk.N, side=ctk.LEFT)
         self.settings_options_window_title_label = ctk.CTkLabel(master=self.settings_options_window_frame, text=self._strings.localisable_text.settings_options_window_title)
         self.settings_options_window_title_label.pack(anchor=ctk.CENTER, side=ctk.TOP, padx=10, pady=5)
@@ -124,7 +124,7 @@ class Application(ctk.CTk):
         self.settings_options_window_topmost_checkbox.pack(anchor=ctk.NW, side=ctk.TOP, padx=10, pady=5)
         self.settings_options_window_theme_combobox = ctk.CTkComboBox(master=self.settings_options_window_frame, variable=self.settings_options_window_theme_combobox_str, values=self._strings.localisable_text.settings_options_window_themes_list, state="readonly", command=self._settings_options_window_theme_combobox_select)
         self.settings_options_window_theme_combobox.pack(fill=ctk.X, anchor=ctk.NW, side=ctk.TOP, padx=10, pady=10)
-        self.settings_options_parsing_frame = ctk.CTkFrame(master=self.settings_options_frame, fg_color=self._colors.fg_color, background_corner_colors=self._colors.frame_fg_color_background_corner_colors)
+        self.settings_options_parsing_frame = ctk.CTkFrame(master=self.settings_options_frame, fg_color=self._colors.transparent, background_corner_colors=tuple([self._colors.fg_color, self._colors.frame_fg_color, self._colors.frame_fg_color, self._colors.fg_color]))
         self.settings_options_parsing_frame.pack(fill=ctk.BOTH, anchor=ctk.N, side=ctk.RIGHT, ipadx=5)
         self.settings_options_parsing_title_label = ctk.CTkLabel(master=self.settings_options_parsing_frame, text=self._strings.localisable_text.settings_options_parsing_title)
         self.settings_options_parsing_title_label.pack(anchor=ctk.CENTER, side=ctk.TOP, padx=10, pady=5)
@@ -379,19 +379,19 @@ class Application(ctk.CTk):
     def oauth_thread(self, login: bool = False) -> None:
         self.parsing_settings_start_button.configure(state=ctk.DISABLED)
         try:
-            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.images.avatar_guest, size=(32, 32)))
+            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logging_in)
             self.settings_oauth_login_button.configure(state=ctk.DISABLED, text=self._strings.localisable_text.settings_oauth_login, command=self.oauth_login)
             if not login:
                 self._oauth.refresh_access_token(refresh_token=self._registry.oauth.refresh_token)
             user_data = self._oauth.get_own_data()
-            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.network_image(url=user_data.avatar_url), size=(32, 32)))
+            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.network_image(url=user_data.avatar_url).resize(self._assets.images.avatar_guest.size), radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_in.format(user_data.username))
             self.settings_oauth_login_button.configure(state=ctk.NORMAL, text=self._strings.localisable_text.settings_oauth_logout, command=self.oauth_logout)
             self.parsing_settings_start_button.configure(state=ctk.NORMAL)
         except:
             logging.info(self._strings.log.error_refresh_token)
-            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.images.avatar_guest, size=(32, 32)))
+            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)
             self.settings_oauth_login_button.configure(state=ctk.NORMAL)
         finally:
@@ -408,7 +408,7 @@ class Application(ctk.CTk):
         except:
             logging.info(self._strings.log.error_revoke_token)
         finally:
-            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.images.avatar_guest, size=(32, 32)))
+            self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)
             self.settings_oauth_login_button.configure(state=ctk.NORMAL, text=self._strings.localisable_text.settings_oauth_login, command=self.oauth_login)
 
