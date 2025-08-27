@@ -10,7 +10,7 @@ def check_for_updates(version: str, beta: bool = False) -> bool | None:
         return None
 
 
-class OAuthApplication:
+class OAuthClient:
     _ENDPOINT_URL = "https://{0}"
     _FAILURE_KEYS = {"log", "authentication"}
     _DEBUG_STRING = "{0}: {1}"
@@ -20,7 +20,7 @@ class OAuthApplication:
         self._BASE_URL = f"{self._ENDPOINT_URL}/api/v2"
         self._OAUTH_URL = f"{self._ENDPOINT_URL}/oauth"
         self._RAW_URL = f"{self._ENDPOINT_URL}/osu"
-        self._registry = data.ApplicationRegistry()
+        self._registry = data.RegistryProvider()
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -36,7 +36,7 @@ class OAuthApplication:
         return lambda func: setattr(cls, func.__name__, func)
 
     @classmethod
-    def from_config(cls, config: data.ApplicationConfig.OAuthConfig) -> OAuthApplication:
+    def from_config(cls, config: data.ConfigProvider.OAuthConfig) -> OAuthClient:
         return cls(config.client_id, config.client_secret, config.redirect_uri, config.scopes, config.server)
 
     @staticmethod
@@ -103,7 +103,7 @@ class OAuthApplication:
 
         To request permission from the user, they should be redirected to retrieved link
 
-        https://osu.ppy.sh/docs/#authorization-code-grant
+        osu! documentation: https://osu.ppy.sh/docs/#authorization-code-grant
         :return: URL for authorization
         """
 
@@ -126,7 +126,7 @@ class OAuthApplication:
         """
         Exchange authorization code for an access token
 
-        https://osu.ppy.sh/docs/#authorization-code-grant
+        osu! documentation: https://osu.ppy.sh/docs/#authorization-code-grant
         :param code: The code you received
         :return: ``True`` if authorization was successful
         """
@@ -157,7 +157,7 @@ class OAuthApplication:
         """
         Refresh the token to get new access token without going through authorization process again
 
-        https://osu.ppy.sh/docs/#authorization-code-grant
+        osu! documentation: https://osu.ppy.sh/docs/#authorization-code-grant
         :param refresh_token: Value of refresh token received from previous access token request
         :return: ``True`` if refreshing was successful
         """
@@ -188,7 +188,7 @@ class OAuthApplication:
         """
         Revokes currently authenticated token
 
-        https://osu.ppy.sh/docs/#revoke-current-token
+        osu! documentation: https://osu.ppy.sh/docs/#revoke-current-token
         :return: ``True`` if revocation was successful
         """
 
@@ -211,7 +211,7 @@ class OAuthApplication:
         """
         Similar to ``get_user`` but with authenticated user (token owner) as ``user_id``
 
-        https://osu.ppy.sh/docs/#get-own-data
+        osu! documentation: https://osu.ppy.sh/docs/#get-own-data
         :param ruleset: Ruleset of the scores to be returned
         """
 
@@ -230,7 +230,7 @@ class OAuthApplication:
         """
         This endpoint returns the detail of specified user
 
-        https://osu.ppy.sh/docs/#get-user
+        osu! documentation: https://osu.ppy.sh/docs/#get-user
         :param user: ID of the user
         :param ruleset: Ruleset of the scores to be returned
         """
@@ -250,7 +250,7 @@ class OAuthApplication:
         """
         This endpoint returns the detail of specified score
 
-        https://osu.ppy.sh/docs/#get-apiv2scoresrulesetorscorescore
+        osu! documentation: https://osu.ppy.sh/docs/#get-apiv2scoresrulesetorscorescore
         :param score: ID of the score
         """
 
@@ -269,7 +269,7 @@ class OAuthApplication:
         """
         This endpoint returns the latest score of specified user
 
-        https://osu.ppy.sh/docs/#get-user-scores
+        osu! documentation: https://osu.ppy.sh/docs/#get-user-scores
         :param user: ID of the user
         :param ruleset: Ruleset of the scores to be returned
         :param include_fails: Include scores of failed plays
@@ -300,7 +300,7 @@ class OAuthApplication:
         """
         This endpoint returns the best scores of specified user
 
-        https://osu.ppy.sh/docs/#get-user-scores
+        osu! documentation: https://osu.ppy.sh/docs/#get-user-scores
         :param user: ID of the user
         :param ruleset: Ruleset of the scores to be returned
         :param legacy_only: Whether or not to exclude lazer scores
@@ -326,7 +326,7 @@ class OAuthApplication:
         """
         Gets beatmap data for the specified beatmap ID
 
-        https://osu.ppy.sh/docs/#get-beatmap
+        osu! documentation: https://osu.ppy.sh/docs/#get-beatmap
         :param beatmap: ID of the beatmap
         """
 
@@ -345,7 +345,7 @@ class OAuthApplication:
         """
         Returns difficulty attributes of beatmap with specific mode and mods combination
 
-        https://osu.ppy.sh/docs/#get-beatmap-attributes
+        osu! documentation: https://osu.ppy.sh/docs/#get-beatmap-attributes
         :param beatmap: ID of the beatmap
         :param mods: Mod combination
         :param ruleset: Ruleset of the difficulty attributes
@@ -370,7 +370,7 @@ class OAuthApplication:
         """
         This endpoint returns the detail of specified beatmapset
 
-        https://osu.ppy.sh/docs/#get-apiv2beatmapsetsbeatmapset
+        osu! documentation: https://osu.ppy.sh/docs/#get-apiv2beatmapsetsbeatmapset
         :param beatmapset: ID of the beatmapset
         """
 

@@ -3,7 +3,7 @@ import configparser, winreg
 import utils
 
 
-class ApplicationConfig:
+class ConfigProvider:
     """
     :var oauth: ``OAuthConfig``
     :var settings: ``SettingsConfig``
@@ -12,7 +12,7 @@ class ApplicationConfig:
     class IConfig:
         _SECTION: str = None
 
-        def __init__(self, parent: ApplicationConfig) -> None:
+        def __init__(self, parent: ConfigProvider) -> None:
             self._config = configparser.ConfigParser()
             self._config.read(utils.get_path(relative_path="config.ini"))
             if not self._config.has_section(self._SECTION):
@@ -40,11 +40,12 @@ class ApplicationConfig:
         scopes: str | None
         server: str | None
 
-        def __init__(self, parent: ApplicationConfig) -> None:
+        def __init__(self, parent: ConfigProvider) -> None:
             super().__init__(parent=parent)
             try:
                 self.client_id = int(self.client_id)
             except:
+                self.client_id = None
                 raise configparser.ParsingError("config.ini is filled incorrectly!")
 
     class SettingsConfig(IConfig):
@@ -57,9 +58,10 @@ class ApplicationConfig:
         beta: bool | str | None
         version: str | None
 
-        def __init__(self, parent: ApplicationConfig) -> None:
+        def __init__(self, parent: ConfigProvider) -> None:
             super().__init__(parent=parent)
             if self.beta not in [str(True), str(False)]:
+                self.beta = None
                 raise configparser.ParsingError("config.ini is filled incorrectly!")
             else:
                 self.beta = self.beta == str(True)
@@ -86,7 +88,7 @@ class ApplicationConfig:
         super().__init__()
 
 
-class ApplicationRegistry:
+class RegistryProvider:
     """
     :var oauth: ``OAuthRegistry``
     :var previous: ``PreviousRegistry``
@@ -98,8 +100,8 @@ class ApplicationRegistry:
         _NAME: str = None
         _REGISTRY_VALUES: dict = None
 
-        def __init__(self, parent: ApplicationRegistry = None) -> None:
-            if isinstance(parent, ApplicationRegistry):
+        def __init__(self, parent: RegistryProvider = None) -> None:
+            if isinstance(parent, RegistryProvider):
                 self._REGISTRY_VALUES = parent._REGISTRY_VALUES[self._NAME]
                 self._path = winreg.CreateKey(parent._path, self._NAME)
             for i in self._REGISTRY_VALUES.keys():
@@ -109,7 +111,7 @@ class ApplicationRegistry:
                     setattr(self, i, None)
             super().__init__()
 
-        def refresh(self) -> data.ApplicationRegistry.IRegistry:
+        def refresh(self) -> data.RegistryProvider.IRegistry:
             self.__init__()
             return self
 
@@ -219,6 +221,6 @@ class ApplicationRegistry:
         self.window = self.WindowRegistry(self)
         super().__init__()
 
-    def refresh(self) -> data.ApplicationRegistry:
+    def refresh(self) -> data.RegistryProvider:
         self.__init__()
         return self

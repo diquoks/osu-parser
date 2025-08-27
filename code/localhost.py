@@ -1,4 +1,3 @@
-from __future__ import annotations
 import threading, traceback, waitress, logging, flask
 import interface, query, data
 
@@ -14,7 +13,7 @@ def get_code(application: interface.Application = None) -> str | None:
             application._oauth.get_access_token(code=code)
             threading.Thread(target=application.oauth_thread, args=(True,), daemon=True, name="oauthThread").start()
         else:
-            query.OAuthApplication.from_config(config=data.ApplicationConfig().oauth).get_access_token(code=code)
+            query.OAuthClient.from_config(config=data.ConfigProvider().oauth).get_access_token(code=code)
     except:
         logging.debug(traceback.format_exc())
         return """<script>window.location="https://diquoks.ru/?from=osu-parser-error";</script>"""

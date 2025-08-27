@@ -4,7 +4,7 @@ import rosu_pp_py
 
 class Rulesets:
     """
-    https://osu.ppy.sh/docs/#ruleset
+    osu! documentation: https://osu.ppy.sh/docs/#ruleset
     """
 
     OSU = "osu"
@@ -77,7 +77,7 @@ class RawBeatmapContainer:
 
 class UserStatistics(IModel):
     """
-    https://osu.ppy.sh/docs/#userstatistics
+    osu! documentation: https://osu.ppy.sh/docs/#userstatistics
     """
 
     _ATTRIBUTES = {
@@ -91,7 +91,7 @@ class UserStatistics(IModel):
 
 class User(IModel):
     """
-    https://osu.ppy.sh/docs/#userextended
+    osu! documentation: https://osu.ppy.sh/docs/#userextended
     """
 
     _ATTRIBUTES = {
@@ -113,7 +113,7 @@ class User(IModel):
 
 class BeatmapAttributes(IModel):
     """
-    https://osu.ppy.sh/docs/#beatmapdifficultyattributes
+    osu! documentation: https://osu.ppy.sh/docs/#beatmapdifficultyattributes
     """
 
     _ATTRIBUTES = {
@@ -129,7 +129,7 @@ class BeatmapAttributes(IModel):
 
 class Beatmap(IModel):
     """
-    https://osu.ppy.sh/docs/#beatmapextended
+    osu! documentation: https://osu.ppy.sh/docs/#beatmapextended
     """
 
     _ATTRIBUTES = {
@@ -149,7 +149,7 @@ class Beatmap(IModel):
 
 class Beatmapset(IModel):
     """
-    https://osu.ppy.sh/docs/#beatmapset
+    osu! documentation: https://osu.ppy.sh/docs/#beatmapset
     """
 
     _ATTRIBUTES = {
@@ -231,7 +231,7 @@ class ScoreStatistics(IModel):
 
 class Score(IModel):
     """
-    https://osu.ppy.sh/docs/#score
+    osu! documentation: https://osu.ppy.sh/docs/#score
     """
 
     _ATTRIBUTES = {

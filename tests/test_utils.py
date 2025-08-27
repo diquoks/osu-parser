@@ -12,9 +12,9 @@ class ITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls._strings = misc.Strings()
-        cls._config = data.ApplicationConfig()
-        cls._registry = data.ApplicationRegistry()
-        cls._oauth = query.OAuthApplication.from_config(cls._config.oauth)
+        cls._config = data.ConfigProvider()
+        cls._registry = data.RegistryProvider()
+        cls._oauth = query.OAuthClient.from_config(cls._config.oauth)
         logging.basicConfig(level=logging.DEBUG if cls._config.settings.beta else logging.INFO)
         if cls._REFRESH_TOKEN:
             try:

@@ -14,7 +14,7 @@ class ParsingValues:
     pp_total: float
     pp_diff: float
     score_id: int | None
-    settings: data.ApplicationRegistry.IRegistry
+    settings: data.RegistryProvider.IRegistry
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
