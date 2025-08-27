@@ -15,9 +15,9 @@ class Application(ctk.CTk):
         self.initialized = False
         self._parsing_thread = None
         self._oauth_thread = None
-        self._config = data.ApplicationConfig()
-        self._registry = data.ApplicationRegistry()
-        self._oauth = query.OAuthApplication.from_config(config=self._config.oauth)
+        self._config = data.ConfigProvider()
+        self._registry = data.RegistryProvider()
+        self._oauth = query.OAuthClient.from_config(config=self._config.oauth)
         ctk.set_appearance_mode("system" if self._registry.window.theme is None else self._registry.window.theme)
         ctk.set_default_color_theme("blue")
         logging.basicConfig(level=logging.DEBUG if self._config.settings.beta else logging.INFO)
