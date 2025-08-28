@@ -5,7 +5,7 @@ import models, data
 
 def check_for_updates(version: str, beta: bool = False) -> bool | None:
     try:
-        return not beta and requests.get("https://github.com/diquoks/osu-parser/releases/latest").url != f"https://github.com/diquoks/osu-parser/releases/tag/{version}"
+        return not beta and requests.get("https://api.github.com/repos/diquoks/osu-parser/releases/latest").json()["tag_name"] != version
     except:
         return None
 
