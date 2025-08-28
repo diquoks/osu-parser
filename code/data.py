@@ -242,11 +242,10 @@ class LoggerService(logging.Logger):
     def __init__(self, name: str, file_handling: bool = True, filename: str = datetime.datetime.now().strftime("%d-%m-%y-%H-%M-%S"), level: int = logging.NOTSET, folder_name: str = "logs") -> None:
         super().__init__(name, level)
         stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime $name - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
         self.handlers.append(stream_handler)
         if file_handling:
             os.makedirs(folder_name, exist_ok=True)
             file_handler = logging.FileHandler(f"{folder_name}/{filename}-{name}.log")
+            file_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
             self.handlers.append(file_handler)
-        global_formatter = logging.Formatter(fmt="$levelname $asctime - $message", datefmt="%d-%m-%y %H:%M:%S", style="$")
-        for i in self.handlers:
-            i.setFormatter(global_formatter)
