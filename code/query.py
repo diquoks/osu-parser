@@ -15,16 +15,20 @@ class OAuthClient:
     _FAILURE_KEYS = {"log", "authentication"}
     _DEBUG_STRING = "{0}: {1}"
 
-    def __init__(self, client_id: int, client_secret: str, redirect_uri: str, scopes: str, server: str = "osu.ppy.sh") -> None:
-        self._ENDPOINT_URL = self._ENDPOINT_URL.format(server)
+    def __init__(self, config: data.ConfigProvider) -> None:
+        self._config = config
+        for k, v in self._config.oauth.values.items():
+            setattr(self, k, v)
+        self._ENDPOINT_URL = self._ENDPOINT_URL.format(self.server)
         self._BASE_URL = f"{self._ENDPOINT_URL}/api/v2"
         self._OAUTH_URL = f"{self._ENDPOINT_URL}/oauth"
         self._RAW_URL = f"{self._ENDPOINT_URL}/osu"
         self._registry = data.RegistryProvider()
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect_uri = redirect_uri
-        self.scopes = scopes
+        self._logger = data.LoggerService(
+            name=__name__,
+            file_handling=self._config.settings.logging,
+            level=logging.DEBUG if self._config.settings.beta else logging.INFO,
+        )
         super().__init__()
 
     @classmethod
@@ -34,10 +38,6 @@ class OAuthClient:
         """
 
         return lambda func: setattr(cls, func.__name__, func)
-
-    @classmethod
-    def from_config(cls, config: data.ConfigProvider.OAuthConfig) -> OAuthClient:
-        return cls(config.client_id, config.client_secret, config.redirect_uri, config.scopes, config.server)
 
     @staticmethod
     def convert_expire_date(json_data: dict) -> dict:
@@ -51,11 +51,11 @@ class OAuthClient:
 
     def _query_helper(self, request: requests.PreparedRequest = None, refresh_access_token: bool = False) -> requests.Response | None:
         self._registry.refresh()
-        logging.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded self._registry.refresh()"))
-        if refresh_access_token and ((self._registry.oauth.expires_in and self._registry.oauth.expires_in < datetime.datetime.now().timestamp()) or None in self._registry.oauth.values().values()):
-            logging.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Scheduled refresh_access_token()"))
+        self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded self._registry.refresh()"))
+        if refresh_access_token and ((self._registry.oauth.expires_in and self._registry.oauth.expires_in < datetime.datetime.now().timestamp()) or None in self._registry.oauth.values.values()):
+            self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Scheduled refresh_access_token()"))
             self.refresh_access_token(refresh_token=self._registry.oauth.refresh_token)
-            logging.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded refresh_access_token()"))
+            self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded refresh_access_token()"))
         if request:
             while True:
                 try:
@@ -70,7 +70,7 @@ class OAuthClient:
         else:
             return None
 
-    def _get_headers(self, include_api_version: bool = False, include_authorization: bool = True) -> dict:
+    def _get_headers(self, include_api_version: bool = False, include_authorization: bool = False) -> dict:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",

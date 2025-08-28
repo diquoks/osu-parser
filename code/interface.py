@@ -17,10 +17,14 @@ class Application(ctk.CTk):
         self._oauth_thread = None
         self._config = data.ConfigProvider()
         self._registry = data.RegistryProvider()
-        self._oauth = query.OAuthClient.from_config(config=self._config.oauth)
+        self._logger = data.LoggerService(
+            name=__name__,
+            file_handling=self._config.settings.logging,
+            level=logging.DEBUG if self._config.settings.beta else logging.INFO,
+        )
+        self._oauth = query.OAuthClient(config=self._config)
         ctk.set_appearance_mode("system" if self._registry.window.theme is None else self._registry.window.theme)
         ctk.set_default_color_theme("blue")
-        logging.basicConfig(level=logging.DEBUG if self._config.settings.beta else logging.INFO)
         super().__init__()
         # Attributes
         self._strings = misc.Strings()
@@ -150,36 +154,41 @@ class Application(ctk.CTk):
                 self.parsing_settings_ruleset_combobox_str.set(value=models.Rulesets.names[self._registry.previous.ruleset])
                 self.parsing_settings_ruleset_combobox.configure(text_color=self._colors.combobox_text_color)
             except:
-                logging.info(self._strings.log.error_combobox_value)
+                self._logger.info(self._strings.log.error_combobox_value)
         try:
             self.settings_options_window_theme_combobox_str.set(value=self._strings.localisable_text.settings_options_window_themes_list[self._colors.available_appearance_modes.index(ctk.get_appearance_mode().lower())])
         except:
-            logging.info(self._strings.log.error_combobox_value)
+            self._logger.info(self._strings.log.error_combobox_value)
+        self._logger.info(self._strings.separator.space.join((
+            self._NAME,
+            self._config.settings.version,
+            self._strings.log.initialized,
+        )))
         self.initialized = True
 
     def _autoresize_window(self) -> None:
         width = self.winfo_width() if self.winfo_width() > self.winfo_reqwidth() else self.winfo_reqwidth()
         height = self.winfo_height() if self.winfo_height() > self.winfo_reqheight() else self.winfo_reqheight()
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join((
             self.geometry(),
             f"{width}x{height}+{"+".join(self.geometry().split("+")[1:])}",
-        ])))
+        ))))
         self.geometry(f"{width}x{height}+{"+".join(self.geometry().split("+")[1:])}")
 
     def _save_window_settings(self, close_window: bool = False) -> None:
         self._registry.window.update(dimensions=self.geometry(), state=self.state(), theme=ctk.get_appearance_mode(), topmost=self.attributes("-topmost"))
         self.destroy() if close_window else None
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.column.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.column.join((
             f"close_window = {close_window}",
-            str(self._registry.window.values()),
-        ])))
+            str(self._registry.window.values),
+        ))))
 
     def _round_float_values(self, number: float, adaptive: bool = True, ndigits: int = 2) -> str:
         return format(round(number, ndigits if self._registry.settings.float_values or not adaptive else None), f".{ndigits}f" if self._registry.settings.float_values or not adaptive else str())
 
     def _parsing_settings_ruleset_combobox_select(self, value: str) -> None:
         self.parsing_settings_ruleset_combobox.configure(text_color=self._colors.combobox_text_color)
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, models.Rulesets.rulesets[value]))
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, models.Rulesets.rulesets[value]))
 
     def _parsing_settings_progressbar_set(self, value: float = float()) -> None:
         ratio = 0.02
@@ -194,43 +203,43 @@ class Application(ctk.CTk):
                 self.parsing_settings_progressbar.set(value=current_value + ratio)
                 time.sleep(ratio / 2)
         self.parsing_settings_progressbar.set(value=value)
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, value))
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, value))
 
     def _settings_options_window_theme_combobox_select(self, value: str) -> None:
         ctk.set_appearance_mode(self._colors.available_appearance_modes[self._strings.localisable_text.settings_options_window_themes_list.index(value)])
         self._save_window_settings()
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._colors.available_appearance_modes[self._strings.localisable_text.settings_options_window_themes_list.index(value)]))
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._colors.available_appearance_modes[self._strings.localisable_text.settings_options_window_themes_list.index(value)]))
 
     def _settings_options_window_topmost_checkbox_select(self) -> None:
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join((
             str(bool(self.attributes("-topmost"))),
             str(not self.attributes("-topmost")),
-        ])))
+        ))))
         self.settings_options_window_topmost_checkbox_bool.set(not self.attributes("-topmost"))
         self.attributes("-topmost", not self.attributes("-topmost"))
         self._save_window_settings()
 
     def _settings_options_parsing_float_values_checkbox_select(self) -> None:
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join((
             str(bool(self._registry.settings.float_values)),
             str(not self._registry.settings.float_values),
-        ])))
+        ))))
         self.settings_options_parsing_float_values_bool.set(not self._registry.settings.float_values)
         self._registry.settings.update(float_values=not self._registry.settings.float_values)
 
     def _settings_options_parsing_include_fails_checkbox_select(self) -> None:
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join((
             str(bool(self._registry.settings.include_fails)),
             str(not self._registry.settings.include_fails),
-        ])))
+        ))))
         self.settings_options_parsing_include_fails_bool.set(not self._registry.settings.include_fails)
         self._registry.settings.update(include_fails=not self._registry.settings.include_fails)
 
     def _settings_options_parsing_lazer_mode_checkbox_select(self) -> None:
-        logging.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join([
+        self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.arrow.join((
             str(bool(self._registry.settings.lazer_mode)),
             str(not self._registry.settings.lazer_mode),
-        ])))
+        ))))
         self.settings_options_parsing_lazer_mode_bool.set(not self._registry.settings.lazer_mode)
         self._registry.settings.update(lazer_mode=not self._registry.settings.lazer_mode)
 
@@ -252,7 +261,7 @@ class Application(ctk.CTk):
                     self.parsing_score_bottom_status_label.configure(text=self._strings.localisable_text.parsing_score_bottom_status_score)
                     self._parsing_settings_progressbar_set(value=0.2)
                     score = self._oauth.get_latest_score(user=parsing_user, ruleset=parsing_ruleset, include_fails=bool(self._registry.settings.include_fails), legacy_only=not bool(self._registry.settings.lazer_mode))
-                    if score and (parsing_values.score_id != score.id or parsing_values.settings.values() != self._registry.settings.refresh().values()):
+                    if score and (parsing_values.score_id != score.id or parsing_values.settings.values != self._registry.settings.refresh().values):
                         self._parsing_settings_progressbar_set(value=0.4)
                         best_scores = self._oauth.get_best_scores(user=parsing_user, ruleset=parsing_ruleset, legacy_only=not bool(self._registry.settings.lazer_mode))
                         score_weight = utils.get_score_weight(score=score, best_scores=best_scores)
@@ -306,20 +315,20 @@ class Application(ctk.CTk):
                         )
                         self.parsing_score_pp_label.configure(
                             text=self._strings.separator.comma.join(
-                                [i for i in [
-                                    self._strings.separator.space.join([i for i in [
+                                (i for i in (
+                                    self._strings.separator.space.join(i for i in (
                                         self._strings.localisable_text.parsing_score_pp_total.format(self._round_float_values(user.statistics.pp)),
                                         self._strings.localisable_text.parsing_score_pp_diff.format(self._round_float_values(parsing_values.pp_diff)) if parsing_values.pp_diff != float() else None
-                                    ] if i]),
-                                    self._strings.separator.dash.join([i for i in [
+                                    ) if i),
+                                    self._strings.separator.dash.join(i for i in (
                                         self._strings.localisable_text.parsing_score_pp_score.format(self._round_float_values(score.pp)),
                                         self._strings.localisable_text.parsing_score_pp_rank.format(score.rank_global) if score.rank_global else None,
-                                    ] if i]) if score.pp else None,
+                                    ) if i) if score.pp else None,
                                     self._strings.localisable_text.parsing_score_pp_weight.format(self._round_float_values(score.weight.percentage), score_weight.place, self._round_float_values(score.weight.pp)) if score.weight else None,
-                                ] if i]
+                                ) if i)
                             )
                         )
-                        self.parsing_score_mods_label.configure(text=self._strings.localisable_text.parsing_score_mods.format(self._strings.separator.comma.join(score.mods.stringify_mods())) if score.mods.mods else str())
+                        self.parsing_score_mods_label.configure(text=self._strings.localisable_text.parsing_score_mods.format(self._strings.separator.comma.join(score.mods.mods_string)) if score.mods.mods else str())
                         self.parsing_score_data_grade_label.configure(image=ctk.CTkImage(dark_image=getattr(self._assets.grades, score.rank.lower()) if score.passed else self._assets.grades.f, size=(32, 16)))
                         self.parsing_score_data_stats_label.configure(text=self._strings.localisable_text.parsing_score_data_stats.format(self._round_float_values(score.accuracy * 100, adaptive=False), score.max_combo))
                         self.parsing_score_hits_label.configure(text=self._strings.localisable_text.parsing_score_hits_list[ruleset_index].format(*parsing_score_hits_values[ruleset_index]).replace(str(None), str(int())))
@@ -390,7 +399,7 @@ class Application(ctk.CTk):
             self.settings_oauth_login_button.configure(state=ctk.NORMAL, text=self._strings.localisable_text.settings_oauth_logout, command=self.oauth_logout)
             self.parsing_settings_start_button.configure(state=ctk.NORMAL)
         except:
-            logging.info(self._strings.log.error_refresh_token)
+            self._logger.info(self._strings.log.error_refresh_token)
             self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)
             self.settings_oauth_login_button.configure(state=ctk.NORMAL)
@@ -406,7 +415,7 @@ class Application(ctk.CTk):
         try:
             self._oauth.revoke_current_token()
         except:
-            logging.info(self._strings.log.error_revoke_token)
+            self._logger.info(self._strings.log.error_revoke_token)
         finally:
             self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 
-sys.path.append('../code')
+sys.path.append("../code")
 import unittest
 import test_utils, models
 
@@ -81,5 +81,5 @@ class TestQuery(test_utils.ITest):
             self.assert_type(func_name, test_data, test_type)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
