@@ -1,5 +1,5 @@
 from __future__ import annotations
-import configparser, winreg
+import configparser, datetime, logging, winreg, sys, os
 import utils
 
 
@@ -11,18 +11,25 @@ class ConfigProvider:
 
     class IConfig:
         _SECTION: str = None
+        _CONFIG_VALUES: set = None
 
-        def __init__(self, parent: ConfigProvider) -> None:
-            self._config = configparser.ConfigParser()
-            self._config.read(utils.get_path(relative_path="config.ini"))
-            if not self._config.has_section(self._SECTION):
-                self._config.add_section(self._SECTION)
-            for i in parent._CONFIG_VALUES[self._SECTION]:
-                try:
-                    setattr(self, i, self._config.get(self._SECTION, i))
-                except:
-                    self._config.set(self._SECTION, i, i)
-                    self._config.write(open(utils.get_path(relative_path="config.ini"), "w"))
+        def __init__(self, parent: ConfigProvider = None) -> None:
+            if isinstance(parent, ConfigProvider):
+                self._CONFIG_VALUES = parent._CONFIG_VALUES[self._SECTION]
+                self._config = configparser.ConfigParser()
+                self._config.read(utils.get_path(relative_path="config.ini"))
+                if not self._config.has_section(self._SECTION):
+                    self._config.add_section(self._SECTION)
+                for i in self._CONFIG_VALUES:
+                    try:
+                        setattr(self, i, self._config.get(self._SECTION, i))
+                    except:
+                        self._config.set(self._SECTION, i, i)
+                        self._config.write(open(utils.get_path(relative_path="config.ini"), "w"))
+
+        @property
+        def values(self) -> dict:
+            return {i: getattr(self, i) for i in self._CONFIG_VALUES}
 
     class OAuthConfig(IConfig):
         """
@@ -41,7 +48,7 @@ class ConfigProvider:
         server: str | None
 
         def __init__(self, parent: ConfigProvider) -> None:
-            super().__init__(parent=parent)
+            super().__init__(parent)
             try:
                 self.client_id = int(self.client_id)
             except:
@@ -51,20 +58,23 @@ class ConfigProvider:
     class SettingsConfig(IConfig):
         """
         :var beta: ``bool``
+        :var logging: ``bool``
         :var version: ``str``
         """
 
         _SECTION = "Settings"
         beta: bool | str | None
+        logging: bool | str | None
         version: str | None
 
         def __init__(self, parent: ConfigProvider) -> None:
-            super().__init__(parent=parent)
-            if self.beta not in [str(True), str(False)]:
-                self.beta = None
-                raise configparser.ParsingError("config.ini is filled incorrectly!")
-            else:
-                self.beta = self.beta == str(True)
+            super().__init__(parent)
+            for i in ["beta", "logging"]:
+                if getattr(self, i) not in [str(True), str(False)]:
+                    setattr(self, i, None)
+                    raise configparser.ParsingError("config.ini is filled incorrectly!")
+                else:
+                    setattr(self, i, getattr(self, i) == str(True))
 
     _CONFIG_VALUES = {
         "OAuth":
@@ -78,6 +88,7 @@ class ConfigProvider:
         "Settings":
             {
                 "beta",
+                "logging",
                 "version",
             },
     }
@@ -104,11 +115,11 @@ class RegistryProvider:
             if isinstance(parent, RegistryProvider):
                 self._REGISTRY_VALUES = parent._REGISTRY_VALUES[self._NAME]
                 self._path = winreg.CreateKey(parent._path, self._NAME)
-            for i in self._REGISTRY_VALUES.keys():
-                try:
-                    setattr(self, i, winreg.QueryValueEx(self._path, i)[int()])
-                except:
-                    setattr(self, i, None)
+                for i in self._REGISTRY_VALUES.keys():
+                    try:
+                        setattr(self, i, winreg.QueryValueEx(self._path, i)[int()])
+                    except:
+                        setattr(self, i, None)
             super().__init__()
 
         def refresh(self) -> data.RegistryProvider.IRegistry:
@@ -120,6 +131,7 @@ class RegistryProvider:
                 winreg.SetValueEx(self._path, k, None, self._REGISTRY_VALUES[k], v)
                 setattr(self, k, v)
 
+        @property
         def values(self) -> dict:
             return {i: getattr(self, i) for i in self._REGISTRY_VALUES}
 
@@ -224,3 +236,17 @@ class RegistryProvider:
     def refresh(self) -> data.RegistryProvider:
         self.__init__()
         return self
+
+
+class LoggerService(logging.Logger):
+    def __init__(self, name: str, file_handling: bool = True, filename: str = datetime.datetime.now().strftime("%d-%m-%y-%H-%M-%S"), level: int = logging.NOTSET, folder_name: str = "logs") -> None:
+        super().__init__(name, level)
+        stream_handler = logging.StreamHandler(sys.stdout)
+        self.handlers.append(stream_handler)
+        if file_handling:
+            os.makedirs(folder_name, exist_ok=True)
+            file_handler = logging.FileHandler(f"{folder_name}/{filename}-{name}.log")
+            self.handlers.append(file_handler)
+        global_formatter = logging.Formatter(fmt="$levelname $asctime - $message", datefmt="%d-%m-%y %H:%M:%S", style="$")
+        for i in self.handlers:
+            i.setFormatter(global_formatter)

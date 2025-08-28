@@ -193,7 +193,8 @@ class ModsContainer:
         setattr(self, "data", data)
         setattr(self, "mods", [Mod(data=i) for i in data])
 
-    def stringify_mods(self) -> list | None:
+    @property
+    def mods_string(self) -> list | None:
         return None if len(self.data) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
 
 

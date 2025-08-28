@@ -26,7 +26,7 @@ class ParsingValues:
 
 class Strings:
     class Debug:
-        function_data = "{0}:{1}"
+        function_data = "{0} - {1}"
         test_data = "\n{0}:\nData: {1}\nExpected: {2}"
         attribute_data = "{0}: {1}"
 
@@ -90,6 +90,7 @@ class Strings:
         settings_bottom_version_update = "{0} (Доступно обновление!)"
 
     class Log:
+        initialized = "initialized!"
         test_localhost_deploy = "Deploying localhost...\nlocalhost_thread.daemon = {0}"
         error_localhost_deploy = "Failed to refresh access token\nlocalhost_thread.daemon = {0}"
         error_refresh_token = "Failed to refresh access token"
@@ -166,19 +167,19 @@ class Assets:
 
     @staticmethod
     def file_image(path: str) -> PIL.Image.Image:
-        return PIL.Image.open(fp=io.BytesIO(initial_bytes=open(path, "rb").read()))
+        return PIL.Image.open(io.BytesIO(open(path, "rb").read()))
 
     @staticmethod
     def network_image(url: str) -> PIL.Image.Image:
-        return PIL.Image.open(fp=io.BytesIO(initial_bytes=requests.get(url=url).content))
+        return PIL.Image.open(io.BytesIO(requests.get(url).content))
 
     @staticmethod
     def round_corners(image: PIL.Image.Image, radius: int) -> PIL.Image.Image:
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
+        if image.mode != "RGB":
+            image = image.convert("RGB")
         width, height = image.size
-        shape = PIL.Image.new('L', (radius * 2, radius * 2), 0)
-        alpha = PIL.Image.new('L', image.size, "white")
+        shape = PIL.Image.new("L", (radius * 2, radius * 2), 0)
+        alpha = PIL.Image.new("L", image.size, "white")
         PIL.ImageDraw.Draw(shape).ellipse((0, 0, radius * 2, radius * 2), fill=255)
         alpha.paste(shape.crop((0, 0, radius, radius)), (0, 0))
         alpha.paste(shape.crop((0, radius, radius, radius * 2)), (0, height - radius))

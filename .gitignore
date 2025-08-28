@@ -2,5 +2,6 @@
 /.venv/
 /build/
 !/build/pyinstaller.ps1
+*logs/
 *future_features*
 *config.ini

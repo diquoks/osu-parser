@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 
-sys.path.append('../code')
+sys.path.append("../code")
 import unittest, logging, types
 import models, query, data, misc
 
@@ -14,8 +14,12 @@ class ITest(unittest.TestCase):
         cls._strings = misc.Strings()
         cls._config = data.ConfigProvider()
         cls._registry = data.RegistryProvider()
-        cls._oauth = query.OAuthClient.from_config(cls._config.oauth)
-        logging.basicConfig(level=logging.DEBUG if cls._config.settings.beta else logging.INFO)
+        cls._oauth = query.OAuthClient(cls._config)
+        cls._logger = data.LoggerService(
+            name=__name__,
+            file_handling=cls._config.settings.logging,
+            level=logging.DEBUG if cls._config.settings.beta else logging.INFO,
+        )
         if cls._REFRESH_TOKEN:
             try:
                 cls._oauth._query_helper()
