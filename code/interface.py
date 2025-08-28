@@ -302,15 +302,15 @@ class Application(ctk.CTk):
                         self.parsing_score_beatmap_label.bind(sequence="<ButtonPress-1>", command=lambda i: webbrowser.open(self._strings.url.beatmap_ruleset.format(beatmap.id, parsing_ruleset)))
                         self.parsing_score_difficulty_label.configure(
                             text=self._strings.separator.column.join(
-                                [i for i in [
+                                (i for i in (
                                     self._strings.localisable_text.parsing_score_difficulty.format(beatmap.version, beatmap.status.capitalize(), self._round_float_values(recalculation.difficulty.stars, adaptive=False)),
                                     self._strings.separator.comma.join(
-                                        [i for i in [
+                                        (i for i in (
                                             self._strings.localisable_text.parsing_score_pp_fc.format(self._round_float_values(recalculation.performance_fc.pp)) if not score.is_perfect_combo else None,
                                             self._strings.localisable_text.parsing_score_pp_ss.format(self._round_float_values(recalculation.performance_ss.pp))
-                                        ] if i]
+                                        ) if i)
                                     ) if "x" not in score.rank.lower() else None,
-                                ] if i]
+                                ) if i)
                             )
                         )
                         self.parsing_score_pp_label.configure(
