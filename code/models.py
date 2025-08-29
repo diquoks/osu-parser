@@ -271,4 +271,4 @@ class Score(IModel):
     ruleset_id: int | None
     statistics: ScoreStatistics | None
     is_perfect_combo: bool | None
-    weight: Sc
+    weight: ScoreWeight | None

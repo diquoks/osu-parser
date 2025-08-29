@@ -12,7 +12,7 @@ def check_for_updates(version: str, beta: bool = False) -> bool | None:
 
 class OAuthClient:
     _ENDPOINT_URL = "https://{0}"
-    _FAILURE_KEYS = {"log", "authentication"}
+    _FAILURE_KEYS = {"error", "authentication"}
     _DEBUG_STRING = "{0}: {1}"
 
     def __init__(self, config: data.ConfigProvider) -> None:
@@ -81,6 +81,7 @@ class OAuthClient:
     def _check_failure_keys(self, request_data: dict) -> bool | None:
         if isinstance(request_data, dict):
             return len(self._FAILURE_KEYS & set(list(request_data.keys()))) == int()
+        return None
 
     def get_raw_beatmap(self, beatmap: int) -> models.RawBeatmapContainer | None:
         """
