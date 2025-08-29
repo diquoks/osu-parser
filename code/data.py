@@ -243,9 +243,9 @@ class LoggerService(logging.Logger):
         super().__init__(name, level)
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime $name - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
-        self.handlers.append(stream_handler)
+        self.addHandler(stream_handler)
         if file_handling:
             os.makedirs(folder_name, exist_ok=True)
-            file_handler = logging.FileHandler(f"{folder_name}/{filename}-{name}.log")
+            file_handler = logging.FileHandler(f"{folder_name}/{filename}-{name}.log", encoding="utf-8")
             file_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
-            self.handlers.append(file_handler)
+            self.addHandler(file_handler)
