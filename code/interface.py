@@ -1,5 +1,6 @@
 from __future__ import annotations
-import customtkinter as ctk, webbrowser, threading, logging, ctypes, time, sys
+import webbrowser, threading, logging, ctypes, time, sys
+import customtkinter as ctk
 import models, query, data, utils, misc
 
 
@@ -17,6 +18,8 @@ class Application(ctk.CTk):
         self._oauth_thread = None
         self._config = data.ConfigProvider()
         self._registry = data.RegistryProvider()
+        self._strings = data.StringsProvider()
+        self._assets = data.AssetsProvider()
         self._logger = data.LoggerService(
             name=__name__,
             file_handling=self._config.settings.logging,
@@ -27,8 +30,6 @@ class Application(ctk.CTk):
         ctk.set_default_color_theme("blue")
         super().__init__()
         # Attributes
-        self._strings = misc.Strings()
-        self._assets = misc.Assets()
         self._colors = misc.Colors()
         self._fonts = misc.Fonts()
         self._id_entry_validation = (self.register(lambda i: not self.initialized or ((i == str() or i.isdigit()) and len(i) < 16)), "%P")
@@ -153,12 +154,12 @@ class Application(ctk.CTk):
             try:
                 self.parsing_settings_ruleset_combobox_str.set(value=models.Rulesets.names[self._registry.previous.ruleset])
                 self.parsing_settings_ruleset_combobox.configure(text_color=self._colors.combobox_text_color)
-            except:
-                self._logger.info(self._strings.log.error_combobox_value)
+            except Exception as e:
+                self._logger.info(self._strings.log.error_combobox_value, exc_info=e)
         try:
             self.settings_options_window_theme_combobox_str.set(value=self._strings.localisable_text.settings_options_window_themes_list[self._colors.available_appearance_modes.index(ctk.get_appearance_mode().lower())])
-        except:
-            self._logger.info(self._strings.log.error_combobox_value)
+        except Exception as e:
+            self._logger.info(self._strings.log.error_combobox_value, exc_info=e)
         self._logger.info(self._strings.separator.space.join((
             self._NAME,
             self._config.settings.version,
@@ -179,7 +180,7 @@ class Application(ctk.CTk):
         self._registry.window.update(dimensions=self.geometry(), state=self.state(), theme=ctk.get_appearance_mode(), topmost=self.attributes("-topmost"))
         self.destroy() if close_window else None
         self._logger.debug(self._strings.debug.function_data.format(sys._getframe().f_code.co_name, self._strings.separator.column.join((
-            f"close_window = {close_window}",
+            self._strings.log.debug_close_window.format(close_window),
             str(self._registry.window.values),
         ))))
 
@@ -398,8 +399,8 @@ class Application(ctk.CTk):
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_in.format(user_data.username))
             self.settings_oauth_login_button.configure(state=ctk.NORMAL, text=self._strings.localisable_text.settings_oauth_logout, command=self.oauth_logout)
             self.parsing_settings_start_button.configure(state=ctk.NORMAL)
-        except:
-            self._logger.info(self._strings.log.error_refresh_token)
+        except Exception as e:
+            self._logger.info(self._strings.log.error_refresh_token, exc_info=e)
             self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)
             self.settings_oauth_login_button.configure(state=ctk.NORMAL)
@@ -414,8 +415,8 @@ class Application(ctk.CTk):
         self.parsing_settings_start_button.configure(state=ctk.DISABLED)
         try:
             self._oauth.revoke_current_token()
-        except:
-            self._logger.info(self._strings.log.error_revoke_token)
+        except Exception as e:
+            self._logger.info(self._strings.log.error_revoke_token, exc_info=e)
         finally:
             self.settings_oauth_avatar_label.configure(image=ctk.CTkImage(dark_image=self._assets.round_corners(image=self._assets.images.avatar_guest, radius=24), size=(32, 32)))
             self.settings_oauth_username_label.configure(text=self._strings.localisable_text.settings_oauth_username_logged_out)

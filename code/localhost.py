@@ -1,4 +1,6 @@
-import threading, waitress, logging, flask
+from __future__ import annotations
+import threading, logging
+import waitress, flask
 import interface, query, data
 
 
@@ -31,7 +33,7 @@ class LocalhostFlask(flask.Flask):
             else:
                 query.OAuthClient(config=self._config).get_access_token(code)
         except Exception as e:
-            self._logger.debug(msg=e, exc_info=True)
+            self._logger.log_exception(e)
             return """<script>window.location="https://diquoks.ru/?from=osu-parser-error";</script>"""
         else:
             return """<script>window.location="https://diquoks.ru/?from=osu-parser-success";</script>"""
