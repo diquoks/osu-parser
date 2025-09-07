@@ -3,7 +3,7 @@ import sys
 
 sys.path.append("../code")
 import unittest, logging, types
-import models, query, data, misc
+import models, query, data
 
 
 class ITest(unittest.TestCase):
@@ -11,7 +11,7 @@ class ITest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls._strings = misc.Strings()
+        cls._strings = data.StringsProvider()
         cls._config = data.ConfigProvider()
         cls._registry = data.RegistryProvider()
         cls._oauth = query.OAuthClient(cls._config)
@@ -27,7 +27,7 @@ class ITest(unittest.TestCase):
                 raise unittest.SkipTest(cls._strings.log.error_refresh_token)
 
     def assert_type(self, func_name: str, test_data: object, test_type: type | types.UnionType) -> None:
-        print(self._strings.debug.test_data.format(func_name, test_data, test_type))
+        self._logger.info(self._strings.debug.test_data.format(func_name, test_data, test_type))
         if isinstance(test_data, models.IModel):
-            print(self._strings.separator.newline.join(self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())))
+            self._logger.info(self._strings.separator.newline.join(self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())))
         self.assertIsInstance(test_data, test_type)

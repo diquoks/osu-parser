@@ -1,13 +1,17 @@
 from __future__ import annotations
-import rosu_pp_py, sys, os
+import sys, os
+import rosu_pp_py
 import models
 
 
-def get_path(relative_path: str) -> str:
+def get_path(relative_path: str, only_abspath: bool = False) -> str:
     try:
         base_path = sys._MEIPASS
     except:
         base_path = os.path.abspath(".")
+    finally:
+        if only_abspath:
+            base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
 
@@ -50,16 +54,14 @@ def calculate(score: models.Score, beatmap_raw: models.RawBeatmapContainer, laze
     beatmap = rosu_pp_py.Beatmap(bytes=beatmap_raw.bytes)
     ruleset = models.Rulesets.index[score.ruleset_id]
     beatmap.convert(mode=models.Rulesets.rosu_pp[ruleset], mods=score.mods.data)
-    if ruleset == models.Rulesets.OSU:
-        fc_kwargs = {"n100": score.statistics.ok, "n50": score.statistics.meh}
-    elif ruleset == models.Rulesets.TAIKO:
-        fc_kwargs = {"n100": score.statistics.ok}
-    elif ruleset == models.Rulesets.CATCH:
-        fc_kwargs = {"n100": score.statistics.large_tick_hit, "n50": score.statistics.small_tick_hit}
-    elif ruleset == models.Rulesets.MANIA:
-        fc_kwargs = {"n300": score.statistics.great, "n_katu": score.statistics.good, "n100": score.statistics.ok, "n50": score.statistics.meh}
-    else:
-        return None
+    fc_kwargs = {
+        models.Rulesets.OSU: {"n100": score.statistics.ok, "n50": score.statistics.meh},
+        models.Rulesets.TAIKO: {"n100": score.statistics.ok},
+        models.Rulesets.CATCH: {"n100": score.statistics.large_tick_hit, "n50": score.statistics.small_tick_hit},
+        models.Rulesets.MANIA: {"n300": score.statistics.great, "n_katu": score.statistics.good, "n100": score.statistics.ok, "n50": score.statistics.meh},
+    }.get(ruleset, None)
+    if not fc_kwargs:
+        return fc_kwargs
     try:
         return RecalculatedValues(
             performance_fc=rosu_pp_py.Performance(mods=score.mods.data, lazer=lazer_mode, **fc_kwargs).calculate(beatmap),

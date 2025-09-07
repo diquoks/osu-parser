@@ -1,5 +1,6 @@
 from __future__ import annotations
-import configparser, datetime, logging, winreg, sys, os
+import configparser, datetime, logging, winreg, json, sys, io, os
+import requests, PIL.Image, PIL.ImageDraw
 import utils
 
 
@@ -11,25 +12,47 @@ class ConfigProvider:
 
     class IConfig:
         _SECTION: str = None
-        _CONFIG_VALUES: set = None
+        _CONFIG_VALUES: dict = None
 
         def __init__(self, parent: ConfigProvider = None) -> None:
             if isinstance(parent, ConfigProvider):
                 self._CONFIG_VALUES = parent._CONFIG_VALUES[self._SECTION]
+                self._incorrect_content_exception = configparser.ParsingError("config.ini is filled incorrectly!")
                 self._config = configparser.ConfigParser()
-                self._config.read(utils.get_path(relative_path="config.ini"))
+                self._config.read(utils.get_path("config.ini"))
                 if not self._config.has_section(self._SECTION):
                     self._config.add_section(self._SECTION)
-                for i in self._CONFIG_VALUES:
+                for k, v in self._CONFIG_VALUES.items():
                     try:
-                        setattr(self, i, self._config.get(self._SECTION, i))
+                        setattr(self, k, self._config.get(self._SECTION, k))
                     except:
-                        self._config.set(self._SECTION, i, i)
-                        self._config.write(open(utils.get_path(relative_path="config.ini"), "w"))
+                        self._config.set(self._SECTION, k, v.__name__)
+                        with open(utils.get_path("config.ini"), "w") as file:
+                            self._config.write(fp=file)
+                for k, v in self._CONFIG_VALUES.items():
+                    try:
+                        if v == int:
+                            setattr(self, k, int(getattr(self, k)))
+                        elif v == bool:
+                            if getattr(self, k) not in [str(True), str(False)]:
+                                setattr(self, k, None)
+                                raise self._incorrect_content_exception
+                            else:
+                                setattr(self, k, getattr(self, k) == str(True))
+                        elif v in [dict, list]:
+                            setattr(self, k, json.loads(getattr(self, k)))
+                    except:
+                        setattr(self, k, None)
+                        raise self._incorrect_content_exception
+                if not self.values:
+                    raise self._incorrect_content_exception
 
         @property
-        def values(self) -> dict:
-            return {i: getattr(self, i) for i in self._CONFIG_VALUES}
+        def values(self) -> dict | None:
+            try:
+                return {i: getattr(self, i) for i in self._CONFIG_VALUES}
+            except:
+                return None
 
     class OAuthConfig(IConfig):
         """
@@ -47,14 +70,6 @@ class ConfigProvider:
         scopes: str | None
         server: str | None
 
-        def __init__(self, parent: ConfigProvider) -> None:
-            super().__init__(parent)
-            try:
-                self.client_id = int(self.client_id)
-            except:
-                self.client_id = None
-                raise configparser.ParsingError("config.ini is filled incorrectly!")
-
     class SettingsConfig(IConfig):
         """
         :var beta: ``bool``
@@ -67,31 +82,24 @@ class ConfigProvider:
         logging: bool | str | None
         version: str | None
 
-        def __init__(self, parent: ConfigProvider) -> None:
-            super().__init__(parent)
-            for i in ["beta", "logging"]:
-                if getattr(self, i) not in [str(True), str(False)]:
-                    setattr(self, i, None)
-                    raise configparser.ParsingError("config.ini is filled incorrectly!")
-                else:
-                    setattr(self, i, getattr(self, i) == str(True))
-
     _CONFIG_VALUES = {
         "OAuth":
             {
-                "client_id",
-                "client_secret",
-                "redirect_uri",
-                "scopes",
-                "server",
+                "client_id": int,
+                "client_secret": str,
+                "redirect_uri": str,
+                "scopes": str,
+                "server": str,
             },
         "Settings":
             {
-                "beta",
-                "logging",
-                "version",
+                "beta": bool,
+                "logging": bool,
+                "version": str,
             },
     }
+    oauth: OAuthConfig
+    settings: SettingsConfig
 
     def __init__(self) -> None:
         self.oauth = self.OAuthConfig(self)
@@ -132,8 +140,11 @@ class RegistryProvider:
                 setattr(self, k, v)
 
         @property
-        def values(self) -> dict:
-            return {i: getattr(self, i) for i in self._REGISTRY_VALUES}
+        def values(self) -> dict | None:
+            try:
+                return {i: getattr(self, i) for i in self._REGISTRY_VALUES}
+            except:
+                return None
 
     class OAuthRegistry(IRegistry):
         """
@@ -238,6 +249,173 @@ class RegistryProvider:
         return self
 
 
+class StringsProvider:
+    class Debug:
+        function_data = "{0} - {1}"
+        test_data = "{0}:\nData: {1}\nExpected: {2}"
+        attribute_data = "{0}: {1}"
+
+    class LocalisableText:
+        main_parsing = "Парсинг"
+        main_calculator = "Калькулятор"
+        main_settings = "Настройки"
+        parsing_settings_id = "ID игрока"
+        parsing_settings_ruleset = "Режим игры"
+        parsing_settings_start = "Запустить"
+        parsing_settings_stop = "Остановить"
+        parsing_score_top_user = "{0} (#{1})"
+        parsing_score_beatmap = "{0} - {1} от {2}"
+        parsing_score_difficulty = "{0}, {1}, {2}*"
+        parsing_score_pp_fc = "FC: {0}pp"
+        parsing_score_pp_ss = "SS: {0}pp"
+        parsing_score_pp_total = "Всего: {0}pp"
+        parsing_score_pp_diff = "(+{0}pp)"
+        parsing_score_pp_score = "Рекорд: {0}pp"
+        parsing_score_pp_rank = "#{0}"
+        parsing_score_pp_weight = "Вес: {0}% - #{1} ({2}pp)"
+        parsing_score_mods = "Моды: {0}"
+        parsing_score_data_stats = "Точность: {0}%, Комбо: {1}x"
+        parsing_score_hits_list = [
+            "300: {0}/{1}, 100: {2}, 50: {3}, Miss: {4}",
+            "300: {0}/{1}, 100: {2}, Miss: {3}",
+            "Fruits: {0}/{1}, Ticks: {2}/{3}, Droplets: {4}/{5}",
+            "Max: {0}/{1}, 300: {2}, 200: {3}",
+        ]
+        parsing_score_supp_hits_list = [
+            str(),
+            str(),
+            "Banana: {0}/{1}, Miss: {2}",
+            "100: {0}, 50: {1}, Miss: {2}",
+        ]
+        parsing_score_bottom_status_wait = "Ожидание..."
+        parsing_score_bottom_status_player = "Поиск игрока..."
+        parsing_score_bottom_status_score = "Получение рекорда..."
+        parsing_score_bottom_status_profile = "Получение профиля..."
+        parsing_score_bottom_status_beatmap = "Получение карты..."
+        parsing_score_bottom_recalculate = "Перерасчёт pp"
+        settings_oauth_username_logging_in = "Производится вход..."
+        settings_oauth_username_logged_out = "Вход не выполнен!"
+        settings_oauth_username_logged_in = "Привет, {0}!"
+        settings_oauth_login = "Войти"
+        settings_oauth_logout = "Выйти"
+        settings_options_window_title = "Настройки окна"
+        settings_options_window_themes_list = [
+            "Системная тема",
+            "Светлая тема",
+            "Тёмная тема",
+        ]
+        settings_options_window_topmost = "Поверх других окон"
+        settings_options_parsing_title = "Настройки парсинга"
+        settings_options_parsing_float_values = "Дробные значения"
+        settings_options_parsing_include_fails = "Учитывать фейлы"
+        settings_options_parsing_lazer_mode = "Lazer-рекорды"
+        settings_bottom_help = "Помощь"
+        settings_bottom_creator = "Сделано diquoks ❤"
+        settings_bottom_version_beta = "{0} (β)"
+        settings_bottom_version_update = "{0} (Доступно обновление!)"
+
+    class Log:
+        initialized = "initialized!"
+        debug_close_window = "close_window = {0}"
+        error_combobox_value = "Failed to insert combobox value"
+        debug_localhost_deploy = "Deploying localhost... | localhost_thread.daemon = {0}"
+        error_localhost_deploy = "Failed to refresh access token | localhost_thread.daemon = {0}"
+        error_refresh_token = "Failed to refresh access token"
+        debug_revoke_token = "Current token revoking skipped | SKIP_REVOKE = {0}"
+        error_revoke_token = "Failed to revoke current token"
+
+    class Separator:
+        comma = ", "
+        space = " "
+        newline = "\n"
+        arrow = " -> "
+        column = " | "
+        dash = " - "
+
+    class Url:
+        score = "https://osu.ppy.sh/scores/{0}"
+        user_ruleset = "https://osu.ppy.sh/users/{0}/{1}"
+        beatmap_ruleset = "https://osu.ppy.sh/beatmaps/{0}?mode={1}"
+        latest_release = "https://github.com/diquoks/osu-parser/releases/latest"
+        guide = "https://github.com/diquoks/osu-parser/blob/master/GUIDE.md"
+        diquoks_web = "https://diquoks.ru"
+
+    def __init__(self):
+        self.debug = self.Debug()
+        self.log = self.Log()
+        self.localisable_text = self.LocalisableText()
+        self.separator = self.Separator()
+        self.url = self.Url()
+
+
+class AssetsProvider:
+    class IDirectory:
+        _PATH: str = None
+        _NAMES: set[str] = None
+
+        def __init__(self, parent: AssetsProvider):
+            for i in self._NAMES:
+                setattr(self, i, parent.file_image(path=self._PATH.format(i)))
+
+    class Grades(IDirectory):
+        _PATH = utils.get_path("assets/grades/{0}.png")
+        _NAMES = {
+            "a",
+            "b",
+            "c",
+            "d",
+            "f",
+            "s",
+            "sh",
+            "x",
+            "xh",
+        }
+        a: PIL.Image.Image
+        b: PIL.Image.Image
+        c: PIL.Image.Image
+        d: PIL.Image.Image
+        f: PIL.Image.Image
+        s: PIL.Image.Image
+        sh: PIL.Image.Image
+        x: PIL.Image.Image
+        xh: PIL.Image.Image
+
+    class Images(IDirectory):
+        _PATH = utils.get_path("assets/images/{0}.png")
+        _NAMES = {
+            "avatar_guest",
+        }
+        avatar_guest: PIL.Image.Image
+
+    def __init__(self):
+        self.grades = self.Grades(self)
+        self.images = self.Images(self)
+
+    @staticmethod
+    def file_image(path: str) -> PIL.Image.Image:
+        with open(path, "rb") as file:
+            return PIL.Image.open(io.BytesIO(file.read()))
+
+    @staticmethod
+    def network_image(url: str) -> PIL.Image.Image:
+        return PIL.Image.open(io.BytesIO(requests.get(url).content))
+
+    @staticmethod
+    def round_corners(image: PIL.Image.Image, radius: int) -> PIL.Image.Image:
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        width, height = image.size
+        shape = PIL.Image.new("L", (radius * 2, radius * 2), 0)
+        alpha = PIL.Image.new("L", image.size, "white")
+        PIL.ImageDraw.Draw(shape).ellipse((0, 0, radius * 2, radius * 2), fill=255)
+        alpha.paste(shape.crop((0, 0, radius, radius)), (0, 0))
+        alpha.paste(shape.crop((0, radius, radius, radius * 2)), (0, height - radius))
+        alpha.paste(shape.crop((radius, 0, radius * 2, radius)), (width - radius, 0))
+        alpha.paste(shape.crop((radius, radius, radius * 2, radius * 2)), (width - radius, height - radius))
+        image.putalpha(alpha)
+        return image
+
+
 class LoggerService(logging.Logger):
     def __init__(self, name: str, file_handling: bool = True, filename: str = datetime.datetime.now().strftime("%d-%m-%y-%H-%M-%S"), level: int = logging.NOTSET, folder_name: str = "logs") -> None:
         super().__init__(name, level)
@@ -245,7 +423,10 @@ class LoggerService(logging.Logger):
         stream_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime $name - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
         self.addHandler(stream_handler)
         if file_handling:
-            os.makedirs(folder_name, exist_ok=True)
-            file_handler = logging.FileHandler(f"{folder_name}/{filename}-{name}.log", encoding="utf-8")
+            os.makedirs(utils.get_path(folder_name, only_abspath=True), exist_ok=True)
+            file_handler = logging.FileHandler(utils.get_path(f"{folder_name}/{filename}-{name}.log", only_abspath=True), encoding="utf-8")
             file_handler.setFormatter(logging.Formatter(fmt="$levelname $asctime - $message", datefmt="%d-%m-%y %H:%M:%S", style="$"))
             self.addHandler(file_handler)
+
+    def log_exception(self, e: Exception) -> None:
+        self.error(msg=e, exc_info=True)

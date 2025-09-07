@@ -1,5 +1,6 @@
 from __future__ import annotations
-import requests, datetime, logging, sys
+import datetime, logging, sys
+import requests
 import models, data
 
 

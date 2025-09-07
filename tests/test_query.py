@@ -73,7 +73,7 @@ class TestQuery(test_utils.ITest):
 
     def test_revoke_current_token(self) -> None:
         if SKIP_REVOKE:
-            raise unittest.SkipTest(self._strings.log.test_revoke_token.format(SKIP_REVOKE))
+            raise unittest.SkipTest(self._strings.log.debug_revoke_token.format(SKIP_REVOKE))
         else:
             func_name = sys._getframe().f_code.co_name
             test_data = self._oauth.revoke_current_token()

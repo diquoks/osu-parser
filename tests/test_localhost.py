@@ -13,16 +13,16 @@ class TestLocalhost(test_utils.ITest):
 
     def test_localhost(self) -> None:
         func_name = sys._getframe().f_code.co_name
-        test_data = self._strings.log.test_localhost_deploy.format(SKIP_DEPLOYMENT)
+        test_data = self._strings.log.debug_localhost_deploy.format(SKIP_DEPLOYMENT)
         test_type = str
         self.assert_type(func_name, test_data, test_type)
         localhost_flask = localhost.LocalhostFlask()
         localhost_thread = threading.Thread(target=localhost_flask.serve, daemon=SKIP_DEPLOYMENT, name="localhostThread")
         try:
             self._oauth._query_helper()
-        except:
+        except Exception as e:
             localhost_thread.daemon = False
-            print(self._strings.log.error_localhost_deploy.format(localhost_thread.daemon))
+            self._logger.error(self._strings.log.error_localhost_deploy.format(localhost_thread.daemon), exc_info=e)
         finally:
             localhost_thread.start()
 
