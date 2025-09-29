@@ -1,7 +1,5 @@
 /.idea/
 /.venv/
 /build/
-!/build/pyinstaller.ps1
-/future_features/
 *logs/
 *config.ini
