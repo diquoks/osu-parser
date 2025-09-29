@@ -1,8 +1,11 @@
 from __future__ import annotations
 import rosu_pp_py
+import enum
+import pyquoks.models, pyquoks.data
 
 
-class Rulesets:
+# Enums
+class RulesetsType(enum.StrEnum):
     """
     osu! documentation: https://osu.ppy.sh/docs/#ruleset
     """
@@ -11,71 +14,42 @@ class Rulesets:
     TAIKO = "taiko"
     CATCH = "fruits"
     MANIA = "mania"
-    index = [
-        OSU,
-        TAIKO,
-        CATCH,
-        MANIA,
+    # AUTO = "auto"
+
+
+# Utils
+class RulesetsUtils:
+    list = [
+        RulesetsType.OSU,
+        RulesetsType.TAIKO,
+        RulesetsType.CATCH,
+        RulesetsType.MANIA,
+        # RulesetsType.AUTO,
     ]
     names = {
-        OSU: "osu!",
-        TAIKO: "osu!taiko",
-        CATCH: "osu!catch",
-        MANIA: "osu!mania",
+        RulesetsType.OSU: "osu!",
+        RulesetsType.TAIKO: "osu!taiko",
+        RulesetsType.CATCH: "osu!catch",
+        RulesetsType.MANIA: "osu!mania",
+        # RulesetsType.AUTO: "Automatic",
     }
     rosu_pp = {
-        OSU: rosu_pp_py.GameMode.Osu,
-        TAIKO: rosu_pp_py.GameMode.Taiko,
-        CATCH: rosu_pp_py.GameMode.Catch,
-        MANIA: rosu_pp_py.GameMode.Mania,
+        RulesetsType.OSU: rosu_pp_py.GameMode.Osu,
+        RulesetsType.TAIKO: rosu_pp_py.GameMode.Taiko,
+        RulesetsType.CATCH: rosu_pp_py.GameMode.Catch,
+        RulesetsType.MANIA: rosu_pp_py.GameMode.Mania,
     }
     rulesets = {
-        "osu!": OSU,
-        "osu!taiko": TAIKO,
-        "osu!catch": CATCH,
-        "osu!mania": MANIA,
+        "osu!": RulesetsType.OSU,
+        "osu!taiko": RulesetsType.TAIKO,
+        "osu!catch": RulesetsType.CATCH,
+        "osu!mania": RulesetsType.MANIA,
+        # "Automatic": RulesetsType.AUTO,
     }
 
 
-class IModel:
-    _ATTRIBUTES: dict | set | None = None
-    _OBJECTS: dict | None = None
-    data: dict
-
-    def __init__(self, data: dict):
-        setattr(self, "data", data)
-        if isinstance(self._ATTRIBUTES, set):
-            for i in self._ATTRIBUTES:
-                try:
-                    setattr(self, i, data[i])
-                except:
-                    setattr(self, i, None)
-        if isinstance(self._ATTRIBUTES, dict):
-            for i, j in self._ATTRIBUTES.items():
-                if isinstance(j, set):
-                    for k in j:
-                        try:
-                            setattr(self, k, data[i][k])
-                        except:
-                            setattr(self, k, None)
-        if isinstance(self._OBJECTS, dict):
-            for i, j in self._OBJECTS.items():
-                try:
-                    setattr(self, i, j(data=data[i]))
-                except:
-                    setattr(self, i, None)
-
-
-class RawBeatmapContainer:
-    id: int
-    bytes: bytes
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-
-class UserStatistics(IModel):
+# Models & Containers
+class UserStatistics(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#userstatistics
     """
@@ -84,12 +58,11 @@ class UserStatistics(IModel):
         "global_rank",
         "pp",
     }
-    data: dict
     global_rank: int | None
     pp: int | None
 
 
-class User(IModel):
+class User(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#userextended
     """
@@ -103,7 +76,6 @@ class User(IModel):
     _OBJECTS = {
         "statistics": UserStatistics,
     }
-    data: dict
     avatar_url: str | None
     id: int | None
     playmode: str | None
@@ -111,7 +83,16 @@ class User(IModel):
     username: str | None
 
 
-class BeatmapAttributes(IModel):
+class RawBeatmapContainer(pyquoks.models.IContainer):
+    _ATTRIBUTES = {
+        "id",
+        "bytes",
+    }
+    id: int
+    bytes: bytes
+
+
+class BeatmapAttributes(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#beatmapdifficultyattributes
     """
@@ -122,12 +103,11 @@ class BeatmapAttributes(IModel):
             "max_combo",
         },
     }
-    data: dict
     star_rating: float | None
     max_combo: int | None
 
 
-class Beatmap(IModel):
+class Beatmap(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#beatmapextended
     """
@@ -139,7 +119,6 @@ class Beatmap(IModel):
         "status",
         "version",
     }
-    data: dict
     beatmapset_id: int | None
     difficulty_rating: float | None
     id: int | None
@@ -147,7 +126,7 @@ class Beatmap(IModel):
     version: str | None
 
 
-class Beatmapset(IModel):
+class Beatmapset(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#beatmapset
     """
@@ -158,47 +137,42 @@ class Beatmapset(IModel):
         "id",
         "title",
     }
-    data: dict
     artist: str | None
     creator: str | None
     id: int | None
     title: str | None
 
 
-class ScoreWeight(IModel):
-    _ATTRIBUTES = {
-        "percentage",
-        "pp",
-    }
-    data: dict
-    percentage: float | None
-    pp: float | None
-
-
-class Mod(IModel):
+class Mod(pyquoks.models.IModel):
     _ATTRIBUTES = {
         "acronym",
         "settings",
     }
-    data: dict
     acronym: str | None
     settings: dict | None
 
 
-class ModsContainer:
-    data: list[dict]
-    mods: list[Mod] | None
-
-    def __init__(self, data: dict):
-        setattr(self, "data", data)
-        setattr(self, "mods", [Mod(data=i) for i in data])
+class ModsContainer(pyquoks.models.IContainer):
+    _DATA = {
+        "mods": Mod,
+    }
+    mods: list[Mod]
 
     @property
     def mods_string(self) -> list | None:
-        return None if len(self.data) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
+        return None if len(self.mods) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
 
 
-class ScoreStatistics(IModel):
+class ScoreWeight(pyquoks.models.IModel):
+    _ATTRIBUTES = {
+        "percentage",
+        "pp",
+    }
+    percentage: float | None
+    pp: float | None
+
+
+class ScoreStatistics(pyquoks.models.IModel):
     _ATTRIBUTES = {
         "good",
         "great",
@@ -214,7 +188,6 @@ class ScoreStatistics(IModel):
         "small_bonus",
         "small_tick_hit",
     }
-    data: dict
     good: int | None
     great: int | None
     ignore_hit: int | None
@@ -230,7 +203,7 @@ class ScoreStatistics(IModel):
     small_tick_hit: int | None
 
 
-class Score(IModel):
+class Score(pyquoks.models.IModel):
     """
     osu! documentation: https://osu.ppy.sh/docs/#score
     """
@@ -255,7 +228,6 @@ class Score(IModel):
         "statistics": ScoreStatistics,
         "weight": ScoreWeight
     }
-    data: dict
     accuracy: float | None
     beatmap: Beatmap | None
     beatmapset: Beatmapset | None
@@ -272,3 +244,68 @@ class Score(IModel):
     statistics: ScoreStatistics | None
     is_perfect_combo: bool | None
     weight: ScoreWeight | None
+
+
+class SeasonalBackground(pyquoks.models.IModel):
+    _ATTRIBUTES = {
+        "url",
+    }
+    _OBJECTS = {
+        "user": User,
+    }
+    url: str | None
+    user: User | None
+
+
+class SeasonalBackgroundSetContainer(pyquoks.models.IContainer):
+    _ATTRIBUTES = {
+        "ends_at",
+    }
+    _OBJECTS = {
+        "backgrounds": SeasonalBackground,
+    }
+    backgrounds: list[SeasonalBackground] | None
+    ends_at: str | None
+
+
+# Values
+class ScoreWeightValues(pyquoks.models.IValues):
+    _ATTRIBUTES = {
+        "place",
+        "score",
+    }
+    place: int | None
+    score: Score | None
+
+
+class RecalculatedValues(pyquoks.models.IValues):
+    _ATTRIBUTES = {
+        "performance_fc",
+        "performance_ss",
+        "difficulty",
+    }
+    performance_fc: rosu_pp_py.PerformanceAttributes | None
+    performance_ss: rosu_pp_py.PerformanceAttributes | None
+    difficulty: rosu_pp_py.DifficultyAttributes | None
+
+
+class DifficultyColorsValues(pyquoks.models.IValues):
+    _ATTRIBUTES = {
+        "difficulty_color",
+        "text_color",
+    }
+    difficulty_color: str | None
+    text_color: str | None
+
+
+class ParsingValues(pyquoks.models.IValues):
+    _ATTRIBUTES = {
+        "pp_total",
+        "pp_diff",
+        "score_id",
+        "settings",
+    }
+    pp_total: float | None
+    pp_diff: float | None
+    score_id: int | None
+    settings: pyquoks.data.IRegistryManager.IRegistry | None
