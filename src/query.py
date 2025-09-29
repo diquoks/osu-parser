@@ -24,21 +24,12 @@ class OAuthClient:
         self._BASE_URL = f"{self._ENDPOINT_URL}/api/v2"
         self._OAUTH_URL = f"{self._ENDPOINT_URL}/oauth"
         self._RAW_URL = f"{self._ENDPOINT_URL}/osu"
-        self._registry = data.RegistryProvider()
+        self._registry = data.RegistryManager()
         self._logger = data.LoggerService(
             name=__name__,
-            file_handling=self._config.settings.logging,
+            file_handling=self._config.settings.file_logging,
             level=logging.DEBUG if self._config.settings.beta else logging.INFO,
         )
-        super().__init__()
-
-    @classmethod
-    def add_method(cls) -> function:
-        """
-        Used as decorator for adding testing methods in ``future_features.py``
-        """
-
-        return lambda func: setattr(cls, func.__name__, func)
 
     @staticmethod
     def convert_expire_date(json_data: dict) -> dict:
@@ -50,7 +41,7 @@ class OAuthClient:
         json_data.update({"expires_in": datetime.datetime.fromtimestamp(json_data["expires_in"])})
         return json_data
 
-    def _query_helper(self, request: requests.PreparedRequest = None, refresh_access_token: bool = False) -> requests.Response | None:
+    def _query_helper(self, request: requests.PreparedRequest = None, refresh_access_token: bool = True) -> requests.Response | None:
         self._registry.refresh()
         self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded self._registry.refresh()"))
         if refresh_access_token and ((self._registry.oauth.expires_in and self._registry.oauth.expires_in < datetime.datetime.now().timestamp()) or None in self._registry.oauth.values.values()):
@@ -97,7 +88,12 @@ class OAuthClient:
             ).prepare(),
             refresh_access_token=False,
         )
-        return models.RawBeatmapContainer(id=beatmap, bytes=request.content) if request.content else None
+        return models.RawBeatmapContainer(
+            json_data={
+                "id": beatmap,
+                "bytes": request.content,
+            },
+        ) if request.content else None
 
     def get_auth_url(self) -> str:
         """
@@ -217,14 +213,16 @@ class OAuthClient:
         :param ruleset: Ruleset of the scores to be returned
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/me{str() if ruleset is None else f"/{ruleset}"}",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/me{str() if not ruleset else f"/{ruleset}"}",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.User(data=request_data)
+            return models.User(json_data=request_data)
         else:
             raise Exception(request_data)
 
@@ -237,14 +235,16 @@ class OAuthClient:
         :param ruleset: Ruleset of the scores to be returned
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/users/{user}{str() if ruleset is None else f"/{ruleset}"}",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/users/{user}{str() if not ruleset else f"/{ruleset}"}",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.User(data=request_data)
+            return models.User(json_data=request_data)
         else:
             raise Exception(request_data)
 
@@ -256,14 +256,16 @@ class OAuthClient:
         :param score: ID of the score
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/scores/{score}",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/scores/{score}",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Score(data=request_data)
+            return models.Score(json_data=request_data)
         else:
             raise Exception(request_data)
 
@@ -278,21 +280,23 @@ class OAuthClient:
         :param legacy_only: Whether or not to exclude lazer scores
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/users/{user}/scores/recent",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-            json={
-                "legacy_only": int(legacy_only),
-                "include_fails": int(include_fails),
-                "mode": ruleset,
-                "limit": 1,
-            },
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/users/{user}/scores/recent",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+                json={
+                    "legacy_only": int(legacy_only),
+                    "include_fails": int(include_fails),
+                    "mode": ruleset,
+                    "limit": 1,
+                },
+            ).prepare(),
+        )
         request_data = request.json()
         if isinstance(request_data, list):
             try:
-                return models.Score(data=request_data[int()])
+                return models.Score(json_data=request_data[int()])
             except IndexError:
                 return None
         else:
@@ -308,19 +312,21 @@ class OAuthClient:
         :param legacy_only: Whether or not to exclude lazer scores
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/users/{user}/scores/best",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-            json={
-                "legacy_only": int(legacy_only),
-                "mode": ruleset,
-                "limit": 100,
-            },
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/users/{user}/scores/best",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+                json={
+                    "legacy_only": int(legacy_only),
+                    "mode": ruleset,
+                    "limit": 100,
+                },
+            ).prepare(),
+        )
         request_data = request.json()
         if isinstance(request_data, list):
-            return [models.Score(data=i) for i in request_data]
+            return [models.Score(json_data=i) for i in request_data]
         else:
             raise Exception(request_data)
 
@@ -332,14 +338,16 @@ class OAuthClient:
         :param beatmap: ID of the beatmap
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/beatmaps/{beatmap}",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/beatmaps/{beatmap}",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Beatmap(data=request_data)
+            return models.Beatmap(json_data=request_data)
         else:
             raise Exception(request_data)
 
@@ -353,18 +361,20 @@ class OAuthClient:
         :param ruleset: Ruleset of the difficulty attributes
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="POST",
-            url=f"{self._BASE_URL}/beatmaps/{beatmap}/attributes",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-            json={
-                "mods": mods,
-                "ruleset": ruleset,
-            },
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="POST",
+                url=f"{self._BASE_URL}/beatmaps/{beatmap}/attributes",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+                json={
+                    "mods": mods,
+                    "ruleset": ruleset,
+                },
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.BeatmapAttributes(data=request_data)
+            return models.BeatmapAttributes(json_data=request_data)
         else:
             raise Exception(request_data)
 
@@ -376,13 +386,35 @@ class OAuthClient:
         :param beatmapset: ID of the beatmapset
         """
 
-        request = self._query_helper(request=requests.Request(
-            method="GET",
-            url=f"{self._BASE_URL}/beatmapsets/{beatmapset}",
-            headers=self._get_headers(include_api_version=True, include_authorization=True),
-        ).prepare())
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/beatmapsets/{beatmapset}",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Beatmapset(data=request_data)
+            return models.Beatmapset(json_data=request_data)
+        else:
+            raise Exception(request_data)
+
+    def get_seasonal_backgrounds(self: query.OAuthClient) -> models.SeasonalBackgroundSetContainer | None:
+        """
+        This endpoint returns current seasonal backgrounds
+
+        osu! documentation: https://osu.ppy.sh/docs/#get-apiv2seasonal-backgrounds
+        """
+
+        request = self._query_helper(
+            request=requests.Request(
+                method="GET",
+                url=f"{self._BASE_URL}/seasonal-backgrounds",
+                headers=self._get_headers(include_api_version=True, include_authorization=True),
+            ).prepare(),
+        )
+        request_data = request.json()
+        if self._check_failure_keys(request_data):
+            return models.SeasonalBackgroundSetContainer(json_data=request_data)
         else:
             raise Exception(request_data)

@@ -1,27 +1,5 @@
 from __future__ import annotations
 import customtkinter as ctk
-import data
-
-
-class ParsingValues:
-    """
-    :var pp_total: ``float``
-    :var pp_diff: ``float``
-    :var score_id: ``int`` | ``None``
-    :var settings: ``IRegistry``
-    """
-
-    pp_total: float
-    pp_diff: float
-    score_id: int | None
-    settings: data.RegistryProvider.IRegistry
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-    def update(self, **kwargs):
-        self.__init__(**kwargs)
 
 
 class Colors:
