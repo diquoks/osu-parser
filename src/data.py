@@ -171,7 +171,7 @@ class StringsProvider(pyquoks.data.IStringsProvider):
         beatmap_ruleset = "https://osu.ppy.sh/beatmaps/{0}?mode={1}"
         latest_release = "https://github.com/diquoks/osu-parser/releases/latest"
         guide = "https://github.com/diquoks/osu-parser/blob/master/GUIDE.md"
-        diquoks_web = "https://diquoks.ru"
+        diquoks_web = "https://diquoks.github.io"
 
     _STRINGS_OBJECTS = {
         "debug": DebugStrings,

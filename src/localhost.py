@@ -22,7 +22,7 @@ class LocalhostFlask(pyquoks.localhost.ILocalhostFlask):
 
     @staticmethod
     def base_redirect() -> str:
-        return """<script>window.location="https://diquoks.ru/";</script>"""
+        return """<script>window.location="https://diquoks.github.io";</script>"""
 
     def get_code(self) -> str | None:
         code = flask.request.args.get(key="code")
@@ -34,6 +34,6 @@ class LocalhostFlask(pyquoks.localhost.ILocalhostFlask):
                 query.OAuthClient(config=self._config).get_access_token(code)
         except Exception as e:
             self._logger.log_exception(e)
-            return """<script>window.location="https://diquoks.ru/?from=osu-parser-error";</script>"""
+            return """<script>window.location="https://diquoks.github.io/?from=osu-parser-error";</script>"""
         else:
-            return """<script>window.location="https://diquoks.ru/?from=osu-parser-success";</script>"""
+            return """<script>window.location="https://diquoks.github.io/?from=osu-parser-success";</script>"""
