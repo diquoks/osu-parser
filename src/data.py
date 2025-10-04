@@ -80,6 +80,8 @@ class AssetsProvider(pyquoks.data.IAssetsProvider):
         "grades": GradesDirectory,
         "images": ImagesDirectory,
     }
+    grades: GradesDirectory
+    images: ImagesDirectory
 
 
 class StringsProvider(pyquoks.data.IStringsProvider):
@@ -88,7 +90,7 @@ class StringsProvider(pyquoks.data.IStringsProvider):
         test_data = "{0}:\nData: {1}\nExpected: {2}"
         attribute_data = "{0}: {1}"
 
-    class LocalisableStrings(pyquoks.data.IStringsProvider.IStrings):
+    class LocalizableStrings(pyquoks.data.IStringsProvider.IStrings):
         main_parsing = "Парсинг"
         main_calculator = "Калькулятор"
         main_settings = "Настройки"
@@ -176,13 +178,13 @@ class StringsProvider(pyquoks.data.IStringsProvider):
     _STRINGS_OBJECTS = {
         "debug": DebugStrings,
         "log": LogStrings,
-        "localisable": LocalisableStrings,
+        "localizable": LocalizableStrings,
         "separator": SeparatorStrings,
         "url": UrlStrings,
     }
     debug: DebugStrings
     log: LogStrings
-    localisable: LocalisableStrings
+    localizable: LocalizableStrings
     separator: SeparatorStrings
     url: UrlStrings
 

@@ -6,7 +6,9 @@ import models, data
 
 def check_for_updates(version: str, beta: bool = False) -> bool | None:
     try:
-        return not beta and requests.get("https://api.github.com/repos/diquoks/osu-parser/releases/latest").json()["tag_name"] != version
+        return not beta and requests.get(
+            "https://api.github.com/repos/diquoks/osu-parser/releases/latest",
+        ).json()["tag_name"] != version
     except:
         return None
 
@@ -15,6 +17,11 @@ class OAuthClient:
     _ENDPOINT_URL = "https://{0}"
     _FAILURE_KEYS = {"error", "authentication"}
     _DEBUG_STRING = "{0}: {1}"
+    client_id: int
+    client_secret: str
+    redirect_uri: str
+    scopes: str
+    server: str
 
     def __init__(self, config: data.ConfigProvider) -> None:
         self._config = config
@@ -33,7 +40,11 @@ class OAuthClient:
 
     @staticmethod
     def convert_expire_date(json_data: dict) -> dict:
-        json_data.update({"expires_in": int((datetime.datetime.now() + datetime.timedelta(seconds=json_data["expires_in"])).timestamp())})
+        json_data.update({
+            "expires_in": int((datetime.datetime.now() + datetime.timedelta(
+                seconds=json_data["expires_in"],
+            )).timestamp()),
+        })
         return json_data
 
     @staticmethod
@@ -41,13 +52,27 @@ class OAuthClient:
         json_data.update({"expires_in": datetime.datetime.fromtimestamp(json_data["expires_in"])})
         return json_data
 
-    def _query_helper(self, request: requests.PreparedRequest = None, refresh_access_token: bool = True) -> requests.Response | None:
+    def _query_helper(
+            self,
+            request: requests.PreparedRequest = None,
+            refresh_access_token: bool = True,
+    ) -> requests.Response | None:
         self._registry.refresh()
-        self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded self._registry.refresh()"))
-        if refresh_access_token and ((self._registry.oauth.expires_in and self._registry.oauth.expires_in < datetime.datetime.now().timestamp()) or None in self._registry.oauth.values.values()):
-            self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Scheduled refresh_access_token()"))
+        self._logger.debug(
+            self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded self._registry.refresh()"),
+        )
+        if refresh_access_token and (
+                (
+                        self._registry.oauth.expires_in and self._registry.oauth.expires_in < datetime.datetime.now().timestamp()
+                ) or None in self._registry.oauth.values.values()
+        ):
+            self._logger.debug(
+                self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Scheduled refresh_access_token()"),
+            )
             self.refresh_access_token(refresh_token=self._registry.oauth.refresh_token)
-            self._logger.debug(self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded refresh_access_token()"))
+            self._logger.debug(
+                self._DEBUG_STRING.format(sys._getframe().f_code.co_name, "Succeeded refresh_access_token()"),
+            )
         if request:
             while True:
                 try:
@@ -67,7 +92,9 @@ class OAuthClient:
             "Accept": "application/json",
             "Content-Type": "application/json",
             "x-api-version": "20240529" if include_api_version else str(),
-            "Authorization": f"{self._registry.oauth.token_type} {self._registry.oauth.access_token}" if include_authorization and None not in (self._registry.oauth.token_type, self._registry.oauth.access_token) else str(),
+            "Authorization": f"{self._registry.oauth.token_type} {self._registry.oauth.access_token}" if include_authorization and None not in (
+                self._registry.oauth.token_type, self._registry.oauth.access_token,
+            ) else str(),
         }
 
     def _check_failure_keys(self, request_data: dict) -> bool | None:
@@ -269,7 +296,13 @@ class OAuthClient:
         else:
             raise Exception(request_data)
 
-    def get_latest_score(self, user: int, ruleset: str, include_fails: bool = False, legacy_only: bool = False) -> models.Score | None:
+    def get_latest_score(
+            self,
+            user: int,
+            ruleset: str,
+            include_fails: bool = False,
+            legacy_only: bool = False,
+    ) -> models.Score | None:
         """
         This endpoint returns the latest score of specified user
 
@@ -351,7 +384,12 @@ class OAuthClient:
         else:
             raise Exception(request_data)
 
-    def get_beatmap_attributes(self, beatmap: int, mods: list[dict] = None, ruleset: str = None) -> models.BeatmapAttributes | None:
+    def get_beatmap_attributes(
+            self,
+            beatmap: int,
+            mods: list[dict] = None,
+            ruleset: str = None,
+    ) -> models.BeatmapAttributes | None:
         """
         Returns difficulty attributes of beatmap with specific mode and mods combination
 
@@ -399,7 +437,7 @@ class OAuthClient:
         else:
             raise Exception(request_data)
 
-    def get_seasonal_backgrounds(self: query.OAuthClient) -> models.SeasonalBackgroundSetContainer | None:
+    def get_seasonal_backgrounds(self) -> models.SeasonalBackgroundSetContainer | None:
         """
         This endpoint returns current seasonal backgrounds
 

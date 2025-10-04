@@ -14,7 +14,12 @@ class TestLocalhost(test_utils.ITest):
         test_type = str
         self.assert_type(func_name, test_data, test_type)
         localhost_flask = localhost.LocalhostFlask()
-        localhost_thread = threading.Thread(target=localhost_flask.serve, kwargs={"port": 727}, daemon=SKIP_DEPLOYMENT, name="localhostThread")
+        localhost_thread = threading.Thread(
+            target=localhost_flask.serve,
+            kwargs={"port": 727},
+            daemon=SKIP_DEPLOYMENT,
+            name="localhostThread",
+        )
         try:
             self._oauth.refresh_access_token(refresh_token=self._registry.oauth.refresh_token)
         except Exception as e:
