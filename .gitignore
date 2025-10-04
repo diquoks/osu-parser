@@ -1,5 +1,4 @@
-/.idea/
 /.venv/
 /build/
-*logs/
-*config.ini
+*/logs/
+*/config.ini
