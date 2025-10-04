@@ -3,7 +3,7 @@ import customtkinter as ctk
 
 
 class Colors:
-    def __init__(self):
+    def __init__(self) -> None:
         self.transparent = "transparent"
         self.fg_color = ctk.ThemeManager.theme["CTk"]["fg_color"]
         self.frame_fg_color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
@@ -17,5 +17,5 @@ class Colors:
 
 
 class Fonts:
-    def __init__(self):
+    def __init__(self) -> None:
         self.underlined = ctk.CTkFont(underline=True)

@@ -6,7 +6,7 @@ import interface, query, data
 
 
 class LocalhostFlask(pyquoks.localhost.ILocalhostFlask):
-    def __init__(self, application: interface.Application = None):
+    def __init__(self, application: interface.Application = None) -> None:
         self._RULES = {
             "/": self.base_redirect,
             "/osu-parser": self.get_code,
@@ -29,7 +29,12 @@ class LocalhostFlask(pyquoks.localhost.ILocalhostFlask):
         try:
             if isinstance(self._application, interface.Application):
                 self._application._oauth.get_access_token(code)
-                threading.Thread(target=self._application.oauth_thread, kwargs={"login": True}, daemon=True, name="oauthThread").start()
+                threading.Thread(
+                    target=self._application.oauth_thread,
+                    kwargs={"login": True},
+                    daemon=True,
+                    name="oauthThread",
+                ).start()
             else:
                 query.OAuthClient(config=self._config).get_access_token(code)
         except Exception as e:

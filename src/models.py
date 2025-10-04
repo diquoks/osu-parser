@@ -159,7 +159,7 @@ class ModsContainer(pyquoks.models.IContainer):
     mods: list[Mod]
 
     @property
-    def mods_string(self) -> list | None:
+    def mods_strings(self) -> list | None:
         return None if len(self.mods) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
 
 

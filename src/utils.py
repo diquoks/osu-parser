@@ -10,23 +10,50 @@ def get_score_weight(score: models.Score, best_scores: list[models.Score]) -> mo
     return None
 
 
-def calculate_pp(score: models.Score, beatmap_raw: models.RawBeatmapContainer, lazer_mode: bool) -> models.RecalculatedValues | None:
+def calculate_pp(
+        score: models.Score,
+        beatmap_raw: models.RawBeatmapContainer,
+        lazer_mode: bool,
+) -> models.RecalculatedValues | None:
     beatmap = rosu_pp_py.Beatmap(bytes=beatmap_raw.bytes)
     ruleset = models.RulesetsUtils.list[score.ruleset_id]
     beatmap.convert(mode=models.RulesetsUtils.rosu_pp.get(ruleset), mods=score.mods.data)
     fc_kwargs = {
-        models.RulesetsType.OSU: {"n100": score.statistics.ok, "n50": score.statistics.meh},
-        models.RulesetsType.TAIKO: {"n100": score.statistics.ok},
-        models.RulesetsType.CATCH: {"n100": score.statistics.large_tick_hit, "n50": score.statistics.small_tick_hit},
-        models.RulesetsType.MANIA: {"n300": score.statistics.great, "n_katu": score.statistics.good, "n100": score.statistics.ok, "n50": score.statistics.meh},
+        models.RulesetsType.OSU: {
+            "n100": score.statistics.ok,
+            "n50": score.statistics.meh,
+        },
+        models.RulesetsType.TAIKO: {
+            "n100": score.statistics.ok,
+        },
+        models.RulesetsType.CATCH: {
+            "n100": score.statistics.large_tick_hit,
+            "n50": score.statistics.small_tick_hit,
+        },
+        models.RulesetsType.MANIA: {
+            "n300": score.statistics.great,
+            "n_katu": score.statistics.good,
+            "n100": score.statistics.ok,
+            "n50": score.statistics.meh,
+        },
     }.get(ruleset, None)
     if not fc_kwargs:
         return fc_kwargs
     try:
         return models.RecalculatedValues(
-            performance_fc=rosu_pp_py.Performance(mods=score.mods.data, lazer=lazer_mode, **fc_kwargs).calculate(beatmap),
-            performance_ss=rosu_pp_py.Performance(mods=score.mods.data, lazer=lazer_mode).calculate(beatmap),
-            difficulty=rosu_pp_py.Difficulty(mods=score.mods.data, lazer=lazer_mode).calculate(beatmap),
+            performance_fc=rosu_pp_py.Performance(
+                mods=score.mods.data,
+                lazer=lazer_mode,
+                **fc_kwargs,
+            ).calculate(beatmap),
+            performance_ss=rosu_pp_py.Performance(
+                mods=score.mods.data,
+                lazer=lazer_mode,
+            ).calculate(beatmap),
+            difficulty=rosu_pp_py.Difficulty(
+                mods=score.mods.data,
+                lazer=lazer_mode,
+            ).calculate(beatmap),
         )
     except:
         return None
@@ -50,6 +77,10 @@ def get_difficulty_colors(difficulty: float) -> models.DifficultyColorsValues:
         [9.00, "#000000"],
     ]
     return models.DifficultyColorsValues(
-        difficulty_color=minimum_value if difficulty < 0.1 else maximum_value if difficulty > 9 else spectra.scale([spectra.html(i[1]).to("rgb") for i in spectrum_values]).domain([i[0] for i in spectrum_values])(difficulty).color_object.get_rgb_hex().upper(),
+        difficulty_color=minimum_value if difficulty < 0.1 else maximum_value if difficulty > 9 else spectra.scale(
+            [spectra.html(i[1]).to("rgb") for i in spectrum_values],
+        ).domain(
+            [i[0] for i in spectrum_values],
+        )(difficulty).color_object.get_rgb_hex().upper(),
         text_color=maximum_value if difficulty < 6.5 else gold_text_value,
     )

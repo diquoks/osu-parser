@@ -27,5 +27,9 @@ class ITest(unittest.TestCase):
     def assert_type(self, func_name: str, test_data: object, test_type: type | types.UnionType) -> None:
         self._logger.info(self._strings.debug.test_data.format(func_name, test_data, test_type))
         if isinstance(test_data, pyquoks.models.IModel):
-            self._logger.info(self._strings.separator.newline.join(self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())))
+            self._logger.info(
+                self._strings.separator.newline.join([
+                    self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())
+                ]),
+            )
         self.assertIsInstance(test_data, test_type)
