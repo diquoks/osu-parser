@@ -19,7 +19,7 @@ pefile==2023.2.7
 pillow==11.3.0
 pyinstaller==6.16.0
 pyinstaller-hooks-contrib==2025.9
-pyquoks==1.2.1
+pyquoks==1.2.2
 pywin32-ctypes==0.2.3
 requests==2.32.5
 rosu-pp-py==3.1.0
