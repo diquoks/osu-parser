@@ -46,7 +46,8 @@ class ConfigProvider(pyquoks.data.IConfigProvider):
 
 class AssetsProvider(pyquoks.data.IAssetsProvider):
     class GradesDirectory(pyquoks.data.IAssetsProvider.IDirectory):
-        _PATH = "grades/{0}.png"
+        _PATH = "grades/"
+        _FILENAME = "{0}.png"
         _NAMES = {
             "a",
             "b",
@@ -69,13 +70,13 @@ class AssetsProvider(pyquoks.data.IAssetsProvider):
         xh: PIL.Image.Image
 
     class ImagesDirectory(pyquoks.data.IAssetsProvider.IDirectory):
-        _PATH = "images/{0}.png"
+        _PATH = "images/"
+        _FILENAME = "{0}.png"
         _NAMES = {
             "avatar_guest",
         }
         avatar_guest: PIL.Image.Image
 
-    _PATH = pyquoks.utils.get_path("assets/{0}")
     _ASSETS_OBJECTS = {
         "grades": GradesDirectory,
         "images": ImagesDirectory,

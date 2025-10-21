@@ -25,8 +25,8 @@ class OAuthClient:
 
     def __init__(self, config: data.ConfigProvider) -> None:
         self._config = config
-        for k, v in self._config.oauth.values.items():
-            setattr(self, k, v)
+        for setting, value in self._config.oauth.values.items():
+            setattr(self, setting, value)
         self._ENDPOINT_URL = self._ENDPOINT_URL.format(self.server)
         self._BASE_URL = f"{self._ENDPOINT_URL}/api/v2"
         self._OAUTH_URL = f"{self._ENDPOINT_URL}/oauth"
@@ -115,12 +115,10 @@ class OAuthClient:
             ).prepare(),
             refresh_access_token=False,
         )
-        return models.RawBeatmapContainer(
-            json_data={
-                "id": beatmap,
-                "bytes": request.content,
-            },
-        ) if request.content else None
+        return models.RawBeatmapContainer({
+            "id": beatmap,
+            "bytes": request.content,
+        }) if request.content else None
 
     def get_auth_url(self) -> str:
         """
@@ -249,7 +247,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.User(json_data=request_data)
+            return models.User(request_data)
         else:
             raise Exception(request_data)
 
@@ -271,7 +269,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.User(json_data=request_data)
+            return models.User(request_data)
         else:
             raise Exception(request_data)
 
@@ -292,7 +290,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Score(json_data=request_data)
+            return models.Score(request_data)
         else:
             raise Exception(request_data)
 
@@ -329,7 +327,7 @@ class OAuthClient:
         request_data = request.json()
         if isinstance(request_data, list):
             try:
-                return models.Score(json_data=request_data[int()])
+                return models.Score(request_data[int()])
             except IndexError:
                 return None
         else:
@@ -359,7 +357,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if isinstance(request_data, list):
-            return [models.Score(json_data=i) for i in request_data]
+            return [models.Score(score_data) for score_data in request_data]
         else:
             raise Exception(request_data)
 
@@ -380,7 +378,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Beatmap(json_data=request_data)
+            return models.Beatmap(request_data)
         else:
             raise Exception(request_data)
 
@@ -412,7 +410,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.BeatmapAttributes(json_data=request_data)
+            return models.BeatmapAttributes(request_data)
         else:
             raise Exception(request_data)
 
@@ -433,7 +431,7 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.Beatmapset(json_data=request_data)
+            return models.Beatmapset(request_data)
         else:
             raise Exception(request_data)
 
@@ -453,6 +451,6 @@ class OAuthClient:
         )
         request_data = request.json()
         if self._check_failure_keys(request_data):
-            return models.SeasonalBackgroundSetContainer(json_data=request_data)
+            return models.SeasonalBackgroundSetContainer(request_data)
         else:
             raise Exception(request_data)

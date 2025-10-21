@@ -29,7 +29,10 @@ class ITest(unittest.TestCase):
         if isinstance(test_data, pyquoks.models.IModel):
             self._logger.info(
                 self._strings.separator.newline.join([
-                    self._strings.debug.attribute_data.format(k, v) for k, v in list(test_data.data.items())
+                    self._strings.debug.attribute_data.format(
+                        key,
+                        value,
+                    ) for key, value in list(test_data._data.items())
                 ]),
             )
         self.assertIsInstance(test_data, test_type)
