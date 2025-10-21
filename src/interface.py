@@ -439,10 +439,7 @@ class Application(ctk.CTk):
         )
 
     def _round_float_values(self, number: float, adaptive: bool = True, digits: int = 2) -> str:
-        return format(
-            round(number, digits if self._registry.settings.float_values or not adaptive else None),
-            f".{digits}f" if self._registry.settings.float_values or not adaptive else str(),
-        )
+        return f"{number:.{digits}f}" if self._registry.settings.float_values or not adaptive else round(number)
 
     def _parsing_settings_ruleset_combobox_select(self, value: str) -> None:
         self.parsing_settings_ruleset_combobox.configure(
@@ -790,29 +787,59 @@ class Application(ctk.CTk):
                         time.sleep(1)
                     self._parsing_settings_progressbar_set()
         finally:
-            self.parsing_score_top_score_label.configure(text=str())
-            self.parsing_score_top_score_label.unbind(sequence="<ButtonPress-1>")
-            self.parsing_score_top_user_label.configure(text=str())
-            self.parsing_score_top_user_label.unbind(sequence="<ButtonPress-1>")
-            self.parsing_score_beatmap_label.configure(text=str())
-            self.parsing_score_difficulty_label.configure(text=str())
-            self.parsing_score_pp_label.configure(text=str())
-            self.parsing_score_mods_label.configure(text=str())
-            self.parsing_score_data_grade_label.configure(image=None)
-            self.parsing_score_data_stats_label.configure(text=str())
-            self.parsing_score_bottom_status_label.configure(text=str())
-            self.parsing_score_supp_hits_label.configure(text=str())
-            self.parsing_score_hits_label.configure(text=str())
-            self.parsing_score_bottom_recalculate_button.configure(state=ctk.DISABLED)
-            self._autoresize_window()
-            self.parsing_settings_start_button.configure(command=self.parsing_start)
-            self.parsing_settings_start_button_str.set(value=self._strings.localizable.parsing_settings_start)
+            self.parsing_score_top_score_label.configure(
+                text=str(),
+            )
+            self.parsing_score_top_score_label.unbind(
+                sequence="<ButtonPress-1>",
+            )
+            self.parsing_score_top_user_label.configure(
+                text=str(),
+            )
+            self.parsing_score_top_user_label.unbind(
+                sequence="<ButtonPress-1>",
+            )
+            self.parsing_score_beatmap_label.configure(
+                text=str(),
+            )
+            self.parsing_score_difficulty_label.configure(
+                text=str(),
+            )
+            self.parsing_score_pp_label.configure(
+                text=str(),
+            )
+            self.parsing_score_mods_label.configure(
+                text=str(),
+            )
+            self.parsing_score_data_grade_label.configure(
+                image=None,
+            )
+            self.parsing_score_data_stats_label.configure(
+                text=str(),
+            )
+            self.parsing_score_bottom_status_label.configure(
+                text=str(),
+            )
+            self.parsing_score_supp_hits_label.configure(
+                text=str())
+            self.parsing_score_hits_label.configure(
+                text=str())
+            self.parsing_score_bottom_recalculate_button.configure(
+                state=ctk.DISABLED,
+            )
+            self.parsing_settings_start_button_str.set(
+                value=self._strings.localizable.parsing_settings_start,
+            )
             self.parsing_settings_progressbar.configure(
                 progress_color=self._colors.fg_color,
                 fg_color=self._colors.fg_color,
             )
             self.parsing_settings_progressbar.stop()
-            self.parsing_settings_start_button.configure(state=ctk.NORMAL)
+            self.parsing_settings_start_button.configure(
+                command=self.parsing_start,
+                state=ctk.NORMAL,
+            )
+            self._autoresize_window()
             self.bell()
 
     def parsing_start(self) -> None:

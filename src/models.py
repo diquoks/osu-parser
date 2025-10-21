@@ -1,7 +1,8 @@
 from __future__ import annotations
 import rosu_pp_py
 import enum
-import pyquoks.models, pyquoks.data
+import pyquoks.models
+import data
 
 
 # Enums
@@ -160,7 +161,9 @@ class ModsContainer(pyquoks.models.IContainer):
 
     @property
     def mods_strings(self) -> list | None:
-        return None if len(self.mods) == int() else [i.acronym + ("*" if i.settings else str()) for i in self.mods]
+        return None if len(self.mods) == int() else [
+            mod.acronym + ("*" if mod.settings else str()) for mod in self.mods
+        ]
 
 
 class ScoreWeight(pyquoks.models.IModel):
@@ -308,4 +311,4 @@ class ParsingValues(pyquoks.models.IValues):
     pp_total: float | None
     pp_diff: float | None
     score_id: int | None
-    settings: pyquoks.data.IRegistryManager.IRegistry | None
+    settings: data.RegistryManager.SettingsRegistry | None

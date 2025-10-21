@@ -4,10 +4,35 @@ import models
 
 
 def get_score_weight(score: models.Score, best_scores: list[models.Score]) -> models.ScoreWeightValues | None:
-    for i, best_score in enumerate(best_scores, start=1):
+    for place, best_score in enumerate(best_scores, start=1):
         if best_score.id == score.id:
-            return models.ScoreWeightValues(place=i, score=best_score)
+            return models.ScoreWeightValues(place=place, score=best_score)
     return None
+
+
+def _get_fc_kwargs(ruleset: models.RulesetsType, score: models.Score) -> dict | None:
+    match ruleset:
+        case models.RulesetsType.OSU:
+            return {
+                "n100": score.statistics.ok,
+                "n50": score.statistics.meh,
+            }
+        case models.RulesetsType.TAIKO:
+            return {
+                "n100": score.statistics.ok,
+            }
+        case models.RulesetsType.CATCH:
+            return {
+                "n100": score.statistics.large_tick_hit,
+                "n50": score.statistics.small_tick_hit,
+            }
+        case models.RulesetsType.MANIA:
+            return {
+                "n300": score.statistics.great,
+                "n_katu": score.statistics.good,
+                "n100": score.statistics.ok,
+                "n50": score.statistics.meh,
+            }
 
 
 def calculate_pp(
@@ -17,41 +42,20 @@ def calculate_pp(
 ) -> models.RecalculatedValues | None:
     beatmap = rosu_pp_py.Beatmap(bytes=beatmap_raw.bytes)
     ruleset = models.RulesetsUtils.list[score.ruleset_id]
-    beatmap.convert(mode=models.RulesetsUtils.rosu_pp.get(ruleset), mods=score.mods.data)
-    fc_kwargs = {
-        models.RulesetsType.OSU: {
-            "n100": score.statistics.ok,
-            "n50": score.statistics.meh,
-        },
-        models.RulesetsType.TAIKO: {
-            "n100": score.statistics.ok,
-        },
-        models.RulesetsType.CATCH: {
-            "n100": score.statistics.large_tick_hit,
-            "n50": score.statistics.small_tick_hit,
-        },
-        models.RulesetsType.MANIA: {
-            "n300": score.statistics.great,
-            "n_katu": score.statistics.good,
-            "n100": score.statistics.ok,
-            "n50": score.statistics.meh,
-        },
-    }.get(ruleset, None)
-    if not fc_kwargs:
-        return fc_kwargs
+    beatmap.convert(mode=models.RulesetsUtils.rosu_pp.get(ruleset), mods=score.mods._data)
     try:
         return models.RecalculatedValues(
             performance_fc=rosu_pp_py.Performance(
-                mods=score.mods.data,
+                mods=score.mods._data,
                 lazer=lazer_mode,
-                **fc_kwargs,
+                **_get_fc_kwargs(ruleset, score),
             ).calculate(beatmap),
             performance_ss=rosu_pp_py.Performance(
-                mods=score.mods.data,
+                mods=score.mods._data,
                 lazer=lazer_mode,
             ).calculate(beatmap),
             difficulty=rosu_pp_py.Difficulty(
-                mods=score.mods.data,
+                mods=score.mods._data,
                 lazer=lazer_mode,
             ).calculate(beatmap),
         )
@@ -78,9 +82,9 @@ def get_difficulty_colors(difficulty: float) -> models.DifficultyColorsValues:
     ]
     return models.DifficultyColorsValues(
         difficulty_color=minimum_value if difficulty < 0.1 else maximum_value if difficulty > 9 else spectra.scale(
-            [spectra.html(i[1]).to("rgb") for i in spectrum_values],
+            [spectra.html(stop_point[1]).to("rgb") for stop_point in spectrum_values],
         ).domain(
-            [i[0] for i in spectrum_values],
+            [stop_point[0] for stop_point in spectrum_values],
         )(difficulty).color_object.get_rgb_hex().upper(),
         text_color=maximum_value if difficulty < 6.5 else gold_text_value,
     )
