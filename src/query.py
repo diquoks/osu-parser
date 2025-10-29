@@ -91,7 +91,7 @@ class OAuthClient:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "x-api-version": "20240529" if include_api_version else str(),
+            "x-api-version": self._config.oauth.api_version if include_api_version else str(),
             "Authorization": f"{self._registry.oauth.token_type} {self._registry.oauth.access_token}" if include_authorization and None not in (
                 self._registry.oauth.token_type, self._registry.oauth.access_token,
             ) else str(),

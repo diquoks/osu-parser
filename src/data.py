@@ -8,6 +8,7 @@ import pyquoks.data, pyquoks.utils
 class ConfigProvider(pyquoks.data.IConfigProvider):
     class OAuthConfig(pyquoks.data.IConfigProvider.IConfig):
         _SECTION = "OAuth"
+        api_version: str
         client_id: int
         client_secret: str
         redirect_uri: str
@@ -23,6 +24,7 @@ class ConfigProvider(pyquoks.data.IConfigProvider):
     _CONFIG_VALUES = {
         "OAuth":
             {
+                "api_version": str,
                 "client_id": int,
                 "client_secret": str,
                 "redirect_uri": str,
