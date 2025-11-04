@@ -1,1 +1,1 @@
-build/pyinstaller.ps1 linguist-vendored
+build/* linguist-vendored
