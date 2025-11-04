@@ -827,6 +827,13 @@ class Application(ctk.CTk):
             self.parsing_score_bottom_recalculate_button.configure(
                 state=ctk.DISABLED,
             )
+            self.parsing_settings_id_entry.configure(
+                state=ctk.NORMAL,
+                text_color=self._colors.entry_text_color,
+            )
+            self.parsing_settings_ruleset_combobox.configure(
+                state="readonly",
+            )
             self.parsing_settings_start_button_str.set(
                 value=self._strings.localizable.parsing_settings_start,
             )
@@ -868,6 +875,13 @@ class Application(ctk.CTk):
                     daemon=True,
                     name="localhostThread",
                 ).start(),
+            )
+            self.parsing_settings_id_entry.configure(
+                state=ctk.DISABLED,
+                text_color=self._colors.combobox_text_color_disabled,
+            )
+            self.parsing_settings_ruleset_combobox.configure(
+                state=ctk.DISABLED,
             )
             self.parsing_settings_start_button_str.set(value=self._strings.localizable.parsing_settings_stop)
 

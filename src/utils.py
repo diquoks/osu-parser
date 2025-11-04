@@ -41,6 +41,7 @@ def calculate_pp(
         lazer_mode: bool,
 ) -> models.RecalculatedValues | None:
     beatmap = rosu_pp_py.Beatmap(bytes=beatmap_raw.bytes)
+    # noinspection PyTypeHints
     ruleset = models.RulesetsUtils.list[score.ruleset_id]
     beatmap.convert(mode=models.RulesetsUtils.rosu_pp.get(ruleset), mods=score.mods._data)
     try:
