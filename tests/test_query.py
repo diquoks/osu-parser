@@ -3,6 +3,7 @@ import logging
 import pyquoks
 
 import src.data
+import src.models
 import src.query
 import tests._test_utils
 
@@ -24,4 +25,20 @@ class TestQuery(pyquoks.test.TestCase):
                 level=logging.DEBUG if config_manager.settings.debug else logging.INFO,
                 path=pyquoks.utils.get_path("tests/logs/"),
             ),
+        )
+
+    def test_get_raw_beatmap(self) -> None:
+        self.assert_type(
+            func_name=self._client.get_raw_beatmap.__name__,
+            test_data=self._client.get_raw_beatmap(
+                beatmap_id=75,
+            ),
+            test_type=src.models.RawBeatmap,
+        )
+
+    def test_get_auth_url(self) -> None:
+        self.assert_type(
+            func_name=self._client.get_auth_url.__name__,
+            test_data=self._client.get_auth_url(),
+            test_type=str,
         )
