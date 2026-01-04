@@ -1,6 +1,4 @@
-from __future__ import annotations
-import logging
-import data
+from . import data
 
 
 class OAuthClient:
@@ -9,16 +7,16 @@ class OAuthClient:
         "authentication",
     }
 
-    def __init__(self) -> None:
-        self._config = data.ConfigManager()
-        self._logger = data.LoggerService(
-            filename=__name__,
-            file_handling=self._config.settings.file_logging,
-            level=logging.DEBUG if self._config.settings.debug else logging.INFO,
-        )
+    def __init__(
+            self,
+            config_manager: data.ConfigManager,
+            logger_service: data.LoggerService,
+    ) -> None:
+        self._config = config_manager
+        self._logger = logger_service
 
     @property
-    def _base_url(self) -> str:
+    def _api_url(self) -> str:
         return f"{self._config.oauth.server}/api/v2"
 
     @property

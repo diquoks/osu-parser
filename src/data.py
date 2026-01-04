@@ -1,4 +1,3 @@
-from __future__ import annotations
 import pyquoks
 
 
@@ -13,7 +12,7 @@ class ConfigManager(pyquoks.data.ConfigManager):
             "client_id": int,
             "client_secret": str,
             "redirect_uri": str,
-            "scopes": str,
+            "scopes": list,
             "server": str,
         }
 
@@ -21,7 +20,7 @@ class ConfigManager(pyquoks.data.ConfigManager):
         client_id: int
         client_secret: str
         redirect_uri: str
-        scopes: str
+        scopes: list
         server: str
 
     class SettingsConfig(pyquoks.data.ConfigManager.Config):
@@ -36,11 +35,6 @@ class ConfigManager(pyquoks.data.ConfigManager):
         debug: bool
         file_logging: bool
         version: str
-
-    _OBJECTS = {
-        "oauth": OAuthConfig,
-        "settings": SettingsConfig,
-    }
 
     oauth: OAuthConfig
     settings: SettingsConfig
