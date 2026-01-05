@@ -1,28 +1,23 @@
 import pyquoks
 
 
+# region Providers
+
+class EnvironmentProvider(pyquoks.data.EnvironmentProvider):
+    OSU_API_VERSION: str
+    OSU_SERVER: str
+    OSU_CLIENT_ID: str
+    OSU_CLIENT_SECRET: str
+    OSU_REDIRECT_URI: str
+    OSU_SCOPE: str
+
+
+# endregion
+
+
 # region Managers
 
 class ConfigManager(pyquoks.data.ConfigManager):
-    class OAuthConfig(pyquoks.data.ConfigManager.Config):
-        _SECTION = "OAuth"
-
-        _VALUES = {
-            "api_version": int,
-            "client_id": int,
-            "client_secret": str,
-            "redirect_uri": str,
-            "scopes": list,
-            "server": str,
-        }
-
-        api_version: int
-        client_id: int
-        client_secret: str
-        redirect_uri: str
-        scopes: list
-        server: str
-
     class SettingsConfig(pyquoks.data.ConfigManager.Config):
         _SECTION = "Settings"
 
@@ -36,7 +31,6 @@ class ConfigManager(pyquoks.data.ConfigManager):
         file_logging: bool
         version: str
 
-    oauth: OAuthConfig
     settings: SettingsConfig
 
 

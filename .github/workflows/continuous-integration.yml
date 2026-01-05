@@ -10,6 +10,14 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  OSU_API_VERSION: ${{ vars.OSU_API_VERSION }}
+  OSU_SERVER: ${{ vars.OSU_SERVER }}
+  OSU_CLIENT_ID: ${{ vars.OSU_CLIENT_ID }}
+  OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
+  OSU_REDIRECT_URI: ${{ vars.OSU_REDIRECT_URI }}
+  OSU_SCOPE: ${{ vars.OSU_SCOPE }}
+
 jobs:
   test:
     name: Run tests
@@ -17,22 +25,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.14"]
+        python-version:
+          - "3.14"
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
 
-    - name: Test with unittest
-      run: |
-        python -m unittest
+      - name: Test with unittest
+        run: |
+          python -m unittest

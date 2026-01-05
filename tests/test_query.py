@@ -15,9 +15,11 @@ class TestQuery(pyquoks.test.TestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
 
+        environment_provider = src.data.EnvironmentProvider()
         config_manager = tests._test_utils.ConfigManager()
 
         cls._client = src.query.OAuthClient(
+            environment_provider=environment_provider,
             config_manager=config_manager,
             logger_service=src.data.LoggerService(
                 filename=src.query.__name__,

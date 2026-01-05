@@ -14,23 +14,25 @@ class OAuthClient:
 
     def __init__(
             self,
+            environment_provider: data.EnvironmentProvider,
             config_manager: data.ConfigManager,
             logger_service: data.LoggerService,
     ) -> None:
+        self._environment = environment_provider
         self._config = config_manager
         self._logger = logger_service
 
     @property
     def _api_url(self) -> str:
-        return f"https://{self._config.oauth.server}/api/v2"
+        return f"https://{self._environment.OSU_SERVER}/api/v2"
 
     @property
     def _oauth_url(self) -> str:
-        return f"https://{self._config.oauth.server}/oauth"
+        return f"https://{self._environment.OSU_SERVER}/oauth"
 
     @property
     def _raw_url(self) -> str:
-        return f"https://{self._config.oauth.server}/osu"
+        return f"https://{self._environment.OSU_SERVER}/osu"
 
     @property
     def _headers(self) -> dict:
@@ -38,7 +40,7 @@ class OAuthClient:
             "Accept": "application/json",
             "Content-Type": "application/json",
             # TODO: "Authorization": f"",
-            "x-api-version": str(self._config.oauth.api_version),
+            "x-api-version": str(self._environment.OSU_API_VERSION),
         }
 
     def _query_helper(
@@ -108,10 +110,10 @@ class OAuthClient:
                 method=http.HTTPMethod.GET,
                 url=f"{self._oauth_url}/authorize",
                 params={
-                    "client_id": self._config.oauth.client_id,
-                    "redirect_uri": self._config.oauth.redirect_uri,
+                    "client_id": self._environment.OSU_CLIENT_ID,
+                    "redirect_uri": self._environment.OSU_REDIRECT_URI,
                     "response_type": "code",
-                    "scope": " ".join(self._config.oauth.scopes),
+                    "scope": self._environment.OSU_SCOPE,
                 },
             ),
             refresh_tokens=False,
