@@ -172,3 +172,27 @@ class OAuthClient:
         )
 
         return src.models.UserExtended(**response.json())
+
+    def get_score(self, score_id: int) -> src.models.Score:
+        """
+        This endpoint returns the detail of specified score
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-apiv2scoresrulesetorscorescore
+        :param score_id: ID of the score
+        """
+
+        self._logger.info(f"{self.get_score.__name__}({score_id=})")
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/scores/{score_id}",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+            ),
+        )
+
+        return src.models.Score(**response.json())

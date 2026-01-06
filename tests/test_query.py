@@ -34,7 +34,7 @@ class TestQuery(pyquoks.test.TestCase):
         cls._RULESET = src.models.Ruleset.OSU
         cls._BEATMAP_ID = 75
         cls._BEATMAPSET_ID = 1
-        cls._SCORE_ID = 5247694414
+        cls._SCORE_ID = 6016860181
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -81,4 +81,15 @@ class TestQuery(pyquoks.test.TestCase):
             func_name=self.test_get_user.__name__,
             test_data=current_user,
             test_type=src.models.UserExtended,
+        )
+
+    def test_get_score(self) -> None:
+        current_score = self._client.get_score(
+            score_id=self._SCORE_ID,
+        )
+
+        self.assert_type(
+            func_name=self.test_get_user.__name__,
+            test_data=current_score,
+            test_type=src.models.Score,
         )
