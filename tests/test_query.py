@@ -30,6 +30,12 @@ class TestQuery(pyquoks.test.TestCase):
             ),
         )
 
+        cls._USER_ID = 31760756
+        cls._RULESET = src.models.Ruleset.OSU
+        cls._BEATMAP_ID = 75
+        cls._BEATMAPSET_ID = 1
+        cls._SCORE_ID = 5247694414
+
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
@@ -40,25 +46,39 @@ class TestQuery(pyquoks.test.TestCase):
         )
 
     def test_get_raw_beatmap(self) -> None:
+        current_raw_beatmap = self._client.get_raw_beatmap(
+            beatmap_id=self._BEATMAP_ID,
+        )
+
         self.assert_type(
             func_name=self.test_get_raw_beatmap.__name__,
-            test_data=self._client.get_raw_beatmap(
-                beatmap_id=75,
-            ),
+            test_data=current_raw_beatmap,
             test_type=src.models.RawBeatmap,
         )
 
-    def test_get_access_token(self) -> None:
-        self._client.get_access_token()
+    def test_authorize_client(self) -> None:
+        self._client.authorize_client()
 
         self.assert_type(
-            func_name=self.test_get_access_token.__name__,
+            func_name=self.test_authorize_client.__name__,
             test_data=self._config.oauth.access_token,
             test_type=str,
         )
 
         self.assert_type(
-            func_name=self.test_get_access_token.__name__,
+            func_name=self.test_authorize_client.__name__,
             test_data=self._config.oauth.expires_timestamp,
             test_type=int,
+        )
+
+    def test_get_user(self) -> None:
+        current_user = self._client.get_user(
+            user_id=self._USER_ID,
+            ruleset=self._RULESET,
+        )
+
+        self.assert_type(
+            func_name=self.test_get_user.__name__,
+            test_data=current_user,
+            test_type=src.models.UserExtended,
         )

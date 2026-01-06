@@ -57,14 +57,16 @@ class OAuthClient:
     def _query_helper(
             self,
             request: requests.Request,
+            /,
+            *,
             refresh_access_token: bool = True,
             check_failure_keys: bool = True,
-            is_get_access_token: bool = False,
+            is_authorize_client: bool = False,
     ) -> requests.Response | None:
         is_access_token_expired = int(datetime.datetime.now().timestamp()) >= self._config.oauth.expires_timestamp
 
-        if refresh_access_token or (is_access_token_expired and not is_get_access_token):
-            self.get_access_token()
+        if refresh_access_token and is_access_token_expired and not is_authorize_client:
+            self.authorize_client()
 
         try:
             response = requests.session().send(
@@ -88,7 +90,7 @@ class OAuthClient:
 
             return response
 
-    def get_raw_beatmap(self, beatmap_id: int) -> src.models.RawBeatmap | None:
+    def get_raw_beatmap(self, beatmap_id: int) -> src.models.RawBeatmap:
         """
         :param beatmap_id: ID of the beatmap
         :return: Content of ``.osu`` file
@@ -97,7 +99,7 @@ class OAuthClient:
         self._logger.info(f"{self.get_raw_beatmap.__name__}({beatmap_id=})")
 
         response = self._query_helper(
-            request=requests.Request(
+            requests.Request(
                 method=http.HTTPMethod.GET,
                 url=f"{self._raw_url}/{beatmap_id}",
             ),
@@ -110,19 +112,20 @@ class OAuthClient:
             raw=response.content,
         )
 
-    def get_access_token(self) -> None:
+    def authorize_client(self) -> None:
         """
         The client credential flow provides a way for developers to get access tokens that do not have associated user permissions
 
         These tokens are considered as guest users
 
-        osu! documentation: https://osu.ppy.sh/docs/#client-credentials-grant
+        osu! documentation:
+            https://osu.ppy.sh/docs/#client-credentials-grant
         """
 
-        self._logger.info(f"{self.get_access_token.__name__}()")
+        self._logger.info(f"{self.authorize_client.__name__}()")
 
         response = self._query_helper(
-            request=requests.Request(
+            requests.Request(
                 method=http.HTTPMethod.POST,
                 url=f"{self._oauth_url}/token",
                 headers=self._get_headers(),
@@ -134,7 +137,7 @@ class OAuthClient:
                 },
             ),
             refresh_access_token=False,
-            is_get_access_token=True,
+            is_authorize_client=True,
         )
 
         request_timestamp = int(datetime.datetime.now().timestamp())
@@ -144,3 +147,28 @@ class OAuthClient:
             access_token=response.json().get("access_token"),
             expires_timestamp=request_timestamp + token_lifetime,
         )
+
+    def get_user(self, user_id: int, ruleset: src.models.Ruleset) -> src.models.UserExtended:
+        """
+        This endpoint returns the detail of specified user
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-user
+        :param user_id: ID of the user
+        :param ruleset: Ruleset name
+        """
+
+        self._logger.info(f"{self.get_user.__name__}({user_id=}, {ruleset=})")
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/users/{user_id}/{ruleset.value}",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+            ),
+        )
+
+        return src.models.UserExtended(**response.json())
