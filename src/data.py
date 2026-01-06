@@ -8,8 +8,6 @@ class EnvironmentProvider(pyquoks.data.EnvironmentProvider):
     OSU_SERVER: str
     OSU_CLIENT_ID: str
     OSU_CLIENT_SECRET: str
-    OSU_REDIRECT_URI: str
-    OSU_SCOPE: str
 
 
 # endregion
@@ -18,6 +16,17 @@ class EnvironmentProvider(pyquoks.data.EnvironmentProvider):
 # region Managers
 
 class ConfigManager(pyquoks.data.ConfigManager):
+    class OAuthConfig(pyquoks.data.ConfigManager.Config):
+        _SECTION = "OAuth"
+
+        _VALUES = {
+            "access_token": str,
+            "expires_timestamp": int,
+        }
+
+        access_token: str
+        expires_timestamp: int
+
     class SettingsConfig(pyquoks.data.ConfigManager.Config):
         _SECTION = "Settings"
 
@@ -31,6 +40,7 @@ class ConfigManager(pyquoks.data.ConfigManager):
         file_logging: bool
         version: str
 
+    oauth: OAuthConfig
     settings: SettingsConfig
 
 

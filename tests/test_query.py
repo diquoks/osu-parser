@@ -18,6 +18,7 @@ class TestQuery(pyquoks.test.TestCase):
         environment_provider = src.data.EnvironmentProvider()
         config_manager = tests._test_utils.ConfigManager()
 
+        cls._config = config_manager
         cls._client = src.query.OAuthClient(
             environment_provider=environment_provider,
             config_manager=config_manager,
@@ -29,18 +30,35 @@ class TestQuery(pyquoks.test.TestCase):
             ),
         )
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+
+        cls._config.oauth.update(
+            access_token="",
+            expires_timestamp=0,
+        )
+
     def test_get_raw_beatmap(self) -> None:
         self.assert_type(
-            func_name=self._client.get_raw_beatmap.__name__,
+            func_name=self.test_get_raw_beatmap.__name__,
             test_data=self._client.get_raw_beatmap(
                 beatmap_id=75,
             ),
             test_type=src.models.RawBeatmap,
         )
 
-    def test_get_auth_url(self) -> None:
+    def test_get_access_token(self) -> None:
+        self._client.get_access_token()
+
         self.assert_type(
-            func_name=self._client.get_auth_url.__name__,
-            test_data=self._client.get_auth_url(),
+            func_name=self.test_get_access_token.__name__,
+            test_data=self._config.oauth.access_token,
             test_type=str,
+        )
+
+        self.assert_type(
+            func_name=self.test_get_access_token.__name__,
+            test_data=self._config.oauth.expires_timestamp,
+            test_type=int,
         )

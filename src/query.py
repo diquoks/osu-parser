@@ -1,9 +1,11 @@
+import datetime
 import http
 
 import requests
 
-from . import data
-from . import models
+import src.constants
+import src.data
+import src.models
 
 
 class OAuthClient:
@@ -14,9 +16,9 @@ class OAuthClient:
 
     def __init__(
             self,
-            environment_provider: data.EnvironmentProvider,
-            config_manager: data.ConfigManager,
-            logger_service: data.LoggerService,
+            environment_provider: src.data.EnvironmentProvider,
+            config_manager: src.data.ConfigManager,
+            logger_service: src.data.LoggerService,
     ) -> None:
         self._environment = environment_provider
         self._config = config_manager
@@ -24,36 +26,51 @@ class OAuthClient:
 
     @property
     def _api_url(self) -> str:
-        return f"https://{self._environment.OSU_SERVER}/api/v2"
+        return f"{self._environment.OSU_SERVER}/api/v2"
 
     @property
     def _oauth_url(self) -> str:
-        return f"https://{self._environment.OSU_SERVER}/oauth"
+        return f"{self._environment.OSU_SERVER}/oauth"
 
     @property
     def _raw_url(self) -> str:
-        return f"https://{self._environment.OSU_SERVER}/osu"
+        return f"{self._environment.OSU_SERVER}/osu"
 
-    @property
-    def _headers(self) -> dict:
-        return {
+    def _get_headers(self, authorization: bool = False, api_version: bool = False) -> dict:
+        base_headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            # TODO: "Authorization": f"",
-            "x-api-version": str(self._environment.OSU_API_VERSION),
         }
+
+        if authorization:
+            base_headers |= {
+                "Authorization": f"Bearer {self._config.oauth.access_token}",
+            }
+
+        if api_version:
+            base_headers |= {
+                "x-api-version": self._environment.OSU_API_VERSION,
+            }
+
+        return base_headers
 
     def _query_helper(
             self,
             request: requests.Request,
-            refresh_tokens: bool = True,
+            refresh_access_token: bool = True,
             check_failure_keys: bool = True,
+            is_get_access_token: bool = False,
     ) -> requests.Response | None:
-        if refresh_tokens:
-            raise NotImplementedError()
+        is_access_token_expired = int(datetime.datetime.now().timestamp()) >= self._config.oauth.expires_timestamp
+
+        if refresh_access_token or (is_access_token_expired and not is_get_access_token):
+            self.get_access_token()
 
         try:
-            response = requests.session().send(request.prepare())
+            response = requests.session().send(
+                request=request.prepare(),
+                timeout=src.constants.REQUEST_TIMEOUT,
+            )
         except Exception as exception:
             self._logger.log_error(
                 exception=exception,
@@ -71,10 +88,10 @@ class OAuthClient:
 
             return response
 
-    def get_raw_beatmap(self, beatmap_id: int) -> models.RawBeatmap | None:
+    def get_raw_beatmap(self, beatmap_id: int) -> src.models.RawBeatmap | None:
         """
-        Endpoint to retrieve ``.osu`` difficulty files
         :param beatmap_id: ID of the beatmap
+        :return: Content of ``.osu`` file
         """
 
         self._logger.info(f"{self.get_raw_beatmap.__name__}({beatmap_id=})")
@@ -84,40 +101,46 @@ class OAuthClient:
                 method=http.HTTPMethod.GET,
                 url=f"{self._raw_url}/{beatmap_id}",
             ),
-            refresh_tokens=False,
+            refresh_access_token=False,
             check_failure_keys=False,
         )
 
-        return models.RawBeatmap(
+        return src.models.RawBeatmap(
             id=beatmap_id,
             raw=response.content,
         )
 
-    def get_auth_url(self) -> str:
+    def get_access_token(self) -> None:
         """
-        To obtain an access token, you must first get an authorization code that is created when a user grants permissions to your application
+        The client credential flow provides a way for developers to get access tokens that do not have associated user permissions
 
-        To request permission from the user, they should be redirected to retrieved link
+        These tokens are considered as guest users
 
-        osu! documentation: https://osu.ppy.sh/docs/#authorization-code-grant
-        :return: URL for authorization
+        osu! documentation: https://osu.ppy.sh/docs/#client-credentials-grant
         """
 
-        self._logger.info(f"{self.get_auth_url.__name__}()")
+        self._logger.info(f"{self.get_access_token.__name__}()")
 
         response = self._query_helper(
             request=requests.Request(
-                method=http.HTTPMethod.GET,
-                url=f"{self._oauth_url}/authorize",
-                params={
+                method=http.HTTPMethod.POST,
+                url=f"{self._oauth_url}/token",
+                headers=self._get_headers(),
+                json={
                     "client_id": self._environment.OSU_CLIENT_ID,
-                    "redirect_uri": self._environment.OSU_REDIRECT_URI,
-                    "response_type": "code",
-                    "scope": self._environment.OSU_SCOPE,
+                    "client_secret": self._environment.OSU_CLIENT_SECRET,
+                    "grant_type": "client_credentials",
+                    "scope": "public",
                 },
             ),
-            refresh_tokens=False,
-            check_failure_keys=False,
+            refresh_access_token=False,
+            is_get_access_token=True,
         )
 
-        return response.url
+        request_timestamp = int(datetime.datetime.now().timestamp())
+        token_lifetime = response.json().get("expires_in") - src.constants.REQUEST_TIMEOUT
+
+        self._config.oauth.update(
+            access_token=response.json().get("access_token"),
+            expires_timestamp=request_timestamp + token_lifetime,
+        )
