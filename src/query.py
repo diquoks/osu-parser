@@ -91,7 +91,7 @@ class OAuthClient:
 
             return response
 
-    def get_raw_beatmap(self, beatmap_id: int) -> src.models.RawBeatmap:
+    def get_raw_beatmap(self, beatmap_id: int) -> src.models.BeatmapRaw:
         """
         :param beatmap_id: ID of the beatmap
         :return: Content of ``.osu`` file
@@ -108,7 +108,7 @@ class OAuthClient:
             check_failure_keys=False,
         )
 
-        return src.models.RawBeatmap(
+        return src.models.BeatmapRaw(
             id=beatmap_id,
             raw=response.content,
         )

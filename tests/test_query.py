@@ -40,11 +40,11 @@ class TestQuery(pyquoks.test.TestCase):
                 user_id=2,
             ),
             tests._test_utils.TestData(
-                beatmap_id=4792235,
-                beatmapset_id=2253116,
+                beatmap_id=75,
+                beatmapset_id=1,
                 message="diquoks",
                 ruleset=src.models.Ruleset.MANIA,
-                score_id=5822098788,
+                score_id=6021181665,
                 user_id=31760756,
             ),
             tests._test_utils.TestData(
@@ -107,7 +107,7 @@ class TestQuery(pyquoks.test.TestCase):
             self.assert_type(
                 func_name=self.test_get_raw_beatmap.__name__,
                 test_data=current_raw_beatmap,
-                test_type=src.models.RawBeatmap,
+                test_type=src.models.BeatmapRaw,
                 message=test_data.message,
             )
 
