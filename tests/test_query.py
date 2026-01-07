@@ -93,3 +93,15 @@ class TestQuery(pyquoks.test.TestCase):
             test_data=current_score,
             test_type=src.models.Score,
         )
+
+    def test_get_latest_user_score(self) -> None:
+        current_score = self._client.get_latest_user_score(
+            user_id=self._USER_ID,
+            ruleset=self._RULESET,
+        )
+
+        self.assert_type(
+            func_name=self.test_get_latest_user_score.__name__,
+            test_data=current_score,
+            test_type=src.models.Score | None,
+        )

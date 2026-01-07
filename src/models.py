@@ -5,18 +5,6 @@ import pydantic
 
 # region Enums
 
-class Ruleset(enum.StrEnum):
-    """
-    osu! documentation:
-        https://osu.ppy.sh/docs/#ruleset
-    """
-
-    OSU = "osu"
-    TAIKO = "taiko"
-    CATCH = "fruits"
-    MANIA = "mania"
-
-
 class Grade(enum.StrEnum):
     XH = "XH"
     X = "X"
@@ -39,6 +27,18 @@ class Grade(enum.StrEnum):
                 return grade.value.upper()
 
 
+class Ruleset(enum.StrEnum):
+    """
+    osu! documentation:
+        https://osu.ppy.sh/docs/#ruleset
+    """
+
+    OSU = "osu"
+    TAIKO = "taiko"
+    CATCH = "fruits"
+    MANIA = "mania"
+
+
 # endregion
 
 # region Models
@@ -46,17 +46,6 @@ class Grade(enum.StrEnum):
 class RawBeatmap(pydantic.BaseModel):
     id: int
     raw: bytes
-
-
-class UserExtended(pydantic.BaseModel):
-    """
-    osu! documentation:
-        https://osu.ppy.sh/docs/#userextended
-    """
-
-    id: int
-    username: str
-    playmode: Ruleset
 
 
 class Score(pydantic.BaseModel):
@@ -70,7 +59,16 @@ class Score(pydantic.BaseModel):
     passed: bool
     pp: float | None
     rank: Grade
-    rank_global: int | None
-    ruleset_id: int
+
+
+class UserExtended(pydantic.BaseModel):
+    """
+    osu! documentation:
+        https://osu.ppy.sh/docs/#userextended
+    """
+
+    id: int
+    username: str
+    playmode: Ruleset
 
 # endregion

@@ -79,7 +79,8 @@ class OAuthClient:
                 raise_again=True
             )
         else:
-            if check_failure_keys and not self._FAILURE_KEYS.isdisjoint(response.json().keys()):
+            if check_failure_keys and isinstance(response.json(), dict) and not self._FAILURE_KEYS.isdisjoint(
+                    response.json().keys()):
                 self._logger.log_error(
                     exception=requests.exceptions.RequestException(
                         request=request,
@@ -196,3 +197,47 @@ class OAuthClient:
         )
 
         return src.models.Score(**response.json())
+
+    def get_latest_user_score(
+            self,
+            user_id: int,
+            ruleset: src.models.Ruleset,
+            include_fails: bool = False,
+            legacy_only: bool = False,
+    ) -> src.models.Score | None:
+        """
+        This endpoint returns the latest score of specified user
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-user-scores
+        :param user_id: ID of the user
+        :param ruleset: Ruleset of the scores to be returned
+        :param include_fails: Include scores of failed plays
+        :param legacy_only: Whether or not to exclude lazer scores
+        """
+
+        self._logger.info(
+            f"{self.get_latest_user_score.__name__}({user_id=}, {ruleset=}, {include_fails=}, {legacy_only=})",
+        )
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/users/{user_id}/scores/recent",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+                json={
+                    "legacy_only": legacy_only,
+                    "include_fails": include_fails,
+                    "mode": ruleset.value,
+                    "limit": 1,
+                },
+            ),
+        )
+
+        try:
+            return src.models.Score(**response.json()[0])
+        except IndexError:
+            return None
