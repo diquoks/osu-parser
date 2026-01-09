@@ -2,7 +2,8 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - dev-pyqt6
+      - master
+  pull_request:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
