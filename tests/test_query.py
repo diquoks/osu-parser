@@ -187,3 +187,16 @@ class TestQuery(pyquoks.test.TestCase):
                     test_type=src.models.Score,
                     message=test_data.message,
                 )
+
+    def test_get_beatmap(self) -> None:
+        for test_data in self._TEST_DATA:
+            current_beatmap = self._client.get_beatmap(
+                beatmap_id=test_data.beatmap_id,
+            )
+
+            self.assert_type(
+                func_name=self.test_get_beatmap.__name__,
+                test_data=current_beatmap,
+                test_type=src.models.Beatmap,
+                message=test_data.message,
+            )

@@ -277,3 +277,27 @@ class OAuthClient:
         )
 
         return [src.models.Score(**score_data) for score_data in response.json()]
+
+    def get_beatmap(self, beatmap_id: int) -> src.models.Beatmap:
+        """
+        Gets beatmap data for the specified beatmap ID
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-beatmap
+        :param beatmap_id: The ID of the beatmap
+        """
+
+        self._logger.info(f"{self.get_beatmap.__name__}({beatmap_id=})")
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/beatmaps/{beatmap_id}",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+            ),
+        )
+
+        return src.models.Beatmap(**response.json())
