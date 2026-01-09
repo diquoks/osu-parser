@@ -20,20 +20,14 @@ class Grade(enum.StrEnum):
     @property
     def readable(self) -> str:
         match self:
-            case Grade.XH | Grade.X:
+            case Grade.XH:
+                return "SS+"
+            case Grade.X:
                 return "SS"
             case Grade.SH:
-                return "S"
+                return "S+"
             case _:
                 return self.value
-
-    @property
-    def is_silver(self) -> bool:
-        match self:
-            case Grade.XH | Grade.SH:
-                return True
-            case _:
-                return False
 
 
 class Ruleset(enum.StrEnum):

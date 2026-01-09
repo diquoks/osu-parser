@@ -31,12 +31,10 @@ class ConfigManager(pyquoks.data.ConfigManager):
         _SECTION = "Settings"
 
         _VALUES = {
-            "debug": bool,
             "file_logging": bool,
             "version": str,
         }
 
-        debug: bool
         file_logging: bool
         version: str
 

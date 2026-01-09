@@ -237,7 +237,43 @@ class OAuthClient:
             ),
         )
 
-        try:
+        if response.json():
             return src.models.Score(**response.json()[0])
-        except IndexError:
+        else:
             return None
+
+    def get_best_user_scores(
+            self,
+            user_id: int,
+            ruleset: src.models.Ruleset,
+            legacy_only: bool = False
+    ) -> list[src.models.Score]:
+        """
+        This endpoint returns the best scores of specified user
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-user-scores
+        :param user_id: ID of the user
+        :param ruleset: Ruleset of the scores to be returned
+        :param legacy_only: Whether or not to exclude lazer scores
+        """
+
+        self._logger.info(f"{self.get_latest_user_score.__name__}({user_id=}, {ruleset=}, {legacy_only=})")
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/users/{user_id}/scores/best",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+                json={
+                    "legacy_only": legacy_only,
+                    "mode": ruleset.value,
+                    "limit": 200,
+                },
+            ),
+        )
+
+        return [src.models.Score(**score_data) for score_data in response.json()]

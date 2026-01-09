@@ -1,5 +1,3 @@
-import logging
-
 import pyquoks
 
 import src.data
@@ -25,7 +23,6 @@ class TestQuery(pyquoks.test.TestCase):
             logger_service=src.data.LoggerService(
                 filename=src.query.__name__,
                 file_handling=config_manager.settings.file_logging,
-                level=logging.DEBUG if config_manager.settings.debug else logging.INFO,
                 path=pyquoks.utils.get_path("tests/logs/"),
             ),
         )
@@ -168,3 +165,25 @@ class TestQuery(pyquoks.test.TestCase):
                 test_type=src.models.Score | None,
                 message=test_data.message,
             )
+
+    def test_get_best_user_scores(self) -> None:
+        for test_data in self._TEST_DATA:
+            current_scores = self._client.get_best_user_scores(
+                user_id=test_data.user_id,
+                ruleset=test_data.ruleset,
+            )
+
+            self.assert_type(
+                func_name=self.test_get_best_user_scores.__name__,
+                test_data=current_scores,
+                test_type=list,
+                message=test_data.message,
+            )
+
+            if current_scores:
+                self.assert_type(
+                    func_name=self.test_get_best_user_scores.__name__,
+                    test_data=current_scores[0],
+                    test_type=src.models.Score,
+                    message=test_data.message,
+                )
