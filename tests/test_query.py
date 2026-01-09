@@ -200,3 +200,16 @@ class TestQuery(pyquoks.test.TestCase):
                 test_type=src.models.Beatmap,
                 message=test_data.message,
             )
+
+    def test_get_beatmap_attributes(self) -> None:
+        for test_data in self._TEST_DATA:
+            current_beatmap_attributes = self._client.get_beatmap_attributes(
+                beatmap_id=test_data.beatmap_id,
+            )
+
+            self.assert_type(
+                func_name=self.test_get_beatmap_attributes.__name__,
+                test_data=current_beatmap_attributes,
+                test_type=src.models.BeatmapDifficultyAttributes,
+                message=test_data.message,
+            )

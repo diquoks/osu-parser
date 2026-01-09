@@ -284,7 +284,7 @@ class OAuthClient:
 
         osu! documentation:
             https://osu.ppy.sh/docs/#get-beatmap
-        :param beatmap_id: The ID of the beatmap
+        :param beatmap_id: ID of the beatmap
         """
 
         self._logger.info(f"{self.get_beatmap.__name__}({beatmap_id=})")
@@ -301,3 +301,47 @@ class OAuthClient:
         )
 
         return src.models.Beatmap(**response.json())
+
+    def get_beatmap_attributes(
+            self,
+            beatmap_id: int,
+            mods: list[src.models.Mod] = None,
+            ruleset: src.models.Ruleset = None,
+    ) -> src.models.BeatmapDifficultyAttributes:
+        """
+        Returns difficulty attributes of beatmap with specific mode and mods combination
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-beatmap-attributes
+        :param beatmap_id: ID of the beatmap
+        :param mods: Mod combination
+        :param ruleset: Ruleset of the difficulty attributes
+        """
+
+        self._logger.info(f"{self.get_beatmap_attributes.__name__}({beatmap_id=}, {mods=}, {ruleset=})")
+
+        request_json = {}
+
+        if mods:
+            request_json |= {
+                "mods": [mod.model_dump() for mod in mods],
+            }
+
+        if ruleset:
+            request_json |= {
+                "ruleset": ruleset.value,
+            }
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.POST,
+                url=f"{self._api_url}/beatmaps/{beatmap_id}/attributes",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+                json=request_json,
+            ),
+        )
+
+        return src.models.BeatmapDifficultyAttributes(**response.json()["attributes"])
