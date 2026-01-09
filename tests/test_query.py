@@ -213,3 +213,16 @@ class TestQuery(pyquoks.test.TestCase):
                 test_type=src.models.BeatmapDifficultyAttributes,
                 message=test_data.message,
             )
+
+    def test_get_beatmapset(self) -> None:
+        for test_data in self._TEST_DATA:
+            current_beatmapset = self._client.get_beatmapset(
+                beatmapset_id=test_data.beatmapset_id,
+            )
+
+            self.assert_type(
+                func_name=self.test_get_beatmapset.__name__,
+                test_data=current_beatmapset,
+                test_type=src.models.Beatmapset,
+                message=test_data.message,
+            )

@@ -345,3 +345,27 @@ class OAuthClient:
         )
 
         return src.models.BeatmapDifficultyAttributes(**response.json()["attributes"])
+
+    def get_beatmapset(self, beatmapset_id: int) -> src.models.Beatmapset:
+        """
+        This endpoint returns the detail of specified beatmapset
+
+        osu! documentation:
+            https://osu.ppy.sh/docs/#get-apiv2beatmapsetsbeatmapset
+        :param beatmapset_id: ID of the beatmapset
+        """
+
+        self._logger.info(f"{self.get_beatmapset.__name__}({beatmapset_id=})")
+
+        response = self._query_helper(
+            requests.Request(
+                method=http.HTTPMethod.GET,
+                url=f"{self._api_url}/beatmapsets/{beatmapset_id}",
+                headers=self._get_headers(
+                    authorization=True,
+                    api_version=True,
+                ),
+            ),
+        )
+
+        return src.models.Beatmapset(**response.json())
